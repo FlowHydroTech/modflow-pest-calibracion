@@ -17,9 +17,6 @@ Este repositorio contiene una arquitectura escalable en **AWS** para ejecutar pr
 Las calibraciones de modelos hidrogeológicos complejos pueden tomar **días o semanas** en equipos locales. Esta arquitectura distribuye el trabajo entre múltiples agentes en la nube, reduciendo significativamente los tiempos de ejecución mediante un esquema **Master-Workers**.
 
 
-
-## Resumen rápido (para reunión)
-- **Estado actual:** `README` actualizado; backup en `README.backup.md`.
 ---
 
 ## Arquitectura General
