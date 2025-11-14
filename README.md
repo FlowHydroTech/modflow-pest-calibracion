@@ -74,27 +74,7 @@ La arquitectura se compone de los siguientes bloques principales:
 
 ---
 
-## Flujo de Ejecución (diagramas)
-
-```mermaid
-flowchart TB
-
-    S3[(S3|Modelos/Inputs)]
-    EC2[EC2 Maestro|PEST Master]
-    SQS[SQS Queue|Distribución]
-    ECS[ECS Workers|Agentes]
-    CW[(CloudWatch|Logs)]
-
-    S3 -->|1. Descarga modelo| EC2
-    EC2 -->|2. Publica tareas| SQS
-    SQS -->|3. Consume tareas| ECS
-    ECS -->|4. Guarda resultados| S3
-    ECS -->|5. Logs| CW
-    EC2 -->|6. Logs| CW
-    S3 -->|7. Lee resultados| EC2
-```
-
-Y, para que se vea "como código / batch", incluí este bloque sencillo que puedes copiar/pegar:
+## Flujo de Ejecución
 
 ```text
 :: Arquitectura (secuencia)
@@ -103,6 +83,7 @@ SQS -> ECS_WORKERS   :: consumir tareas y ejecutar simulaciones
 ECS_WORKERS -> S3    :: subir resultados
 ECS_WORKERS -> CW    :: enviar logs
 EC2_MASTER -> CW     :: logs y monitoreo
+
 ```
 
 ---
