@@ -1,0 +1,40 @@
+services:
+  autonomo:
+    image: pest-talabre
+    container_name: autonomo
+    entrypoint: ["/bin/bash", "/app/entrypoint_autonomo.sh"]
+    environment:
+      - NOMBRE_MODELO_PEST=${NOMBRE_MODELO_PEST:-talabre1.pst}
+      - EJECUTABLE_AUTONOMO=${EJECUTABLE_AUTONOMO:-pest}
+      - BUCKET_NAME=${BUCKET_NAME:-312019940349-pest-talabre}
+    networks:
+      - mi_red
+  master:
+    image: pest-talabre
+    container_name: master
+    entrypoint: ["/bin/bash", "/app/entrypoint_master.sh"]
+    environment:
+      - NOMBRE_MODELO_PEST=${NOMBRE_MODELO_PEST:-talabre1.pst}
+      - EJECUTABLE_MASTER=${EJECUTABLE_MASTER:-pest_hp}
+      - BUCKET_NAME=${BUCKET_NAME:-312019940349-pest-talabre}
+      - PEST_PORT=${PEST_PORT:-4004}
+    ports:
+      - "4004:4004"
+    networks:
+      - mi_red
+
+  agente1:
+    image: pest-talabre
+    container_name: agente1
+    entrypoint: ["/bin/bash", "/app/entrypoint_agent.sh"]
+    environment:
+      - MASTER_IP=master
+      - NOMBRE_MODELO_PEST=${NOMBRE_MODELO_PEST:-talabre1.pst}
+      - EJECUTABLE_AGENTE=${EJECUTABLE_AGENTE:-agent_hp}
+      - PEST_PORT=${PEST_PORT:-4004}
+    networks:
+      - mi_red
+
+networks:
+  mi_red:
+    driver: bridge

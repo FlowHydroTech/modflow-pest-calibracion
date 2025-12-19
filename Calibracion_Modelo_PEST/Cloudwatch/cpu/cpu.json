@@ -1,0 +1,17 @@
+  [
+    {
+      "Id": "cpuUsage",
+      "MetricStat": {
+        "Metric": {
+          "Namespace": "AWS/ECS",
+          "MetricName": "CPUUtilization",
+          "Dimensions": [
+            {"Name": "ServiceName", "Value": "mi-servicio"}
+          ]
+        },
+        "Period": 300,
+        "Stat": "Average"
+      },
+      "ReturnData": true
+    }
+  ]

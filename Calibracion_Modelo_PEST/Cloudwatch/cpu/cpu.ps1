@@ -1,0 +1,1 @@
+aws cloudwatch get-metric-data --metric-data-queries file://./cpu.json --start-time 2025-12-09T00:00:00Z --end-time 2025-12-09T23:59:59Z --region us-east-2 --output text > cpu_metrics.csv

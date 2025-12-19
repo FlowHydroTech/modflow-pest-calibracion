@@ -1,0 +1,192 @@
+version: "3.8"
+services:
+  master:
+    image: pest-talabre-master-local
+    container_name: master
+    ports:
+      - "4004:4004"
+    networks:
+      - mi_red
+
+  agente1:
+    image: pest-talabre-agente-local
+    container_name: agente1
+    networks:
+      - mi_red
+
+  agente2:
+    image: pest-talabre-agente-local
+    container_name: agente2
+    networks:
+      - mi_red
+
+  agente3:
+    image: pest-talabre-agente-local
+    container_name: agente3
+    networks:
+      - mi_red
+
+  agente4:
+    image: pest-talabre-agente-local
+    container_name: agente4
+    networks:
+      - mi_red
+
+  agente5:
+    image: pest-talabre-agente-local
+    container_name: agente5
+    networks:
+      - mi_red
+
+  agente6:
+    image: pest-talabre-agente-local
+    container_name: agente6
+    networks:
+      - mi_red
+
+  agente7:
+    image: pest-talabre-agente-local
+    container_name: agente7
+    networks:
+      - mi_red
+
+  agente8:
+    image: pest-talabre-agente-local
+    container_name: agente8
+    networks:
+      - mi_red
+
+  agente9:
+    image: pest-talabre-agente-local
+    container_name: agente9
+    networks:
+      - mi_red
+
+  agente10:
+    image: pest-talabre-agente-local
+    container_name: agente10
+    networks:
+      - mi_red
+
+  agente11:
+    image: pest-talabre-agente-local
+    container_name: agente11
+    networks:
+      - mi_red
+
+  agente12:
+    image: pest-talabre-agente-local
+    container_name: agente12
+    networks:
+      - mi_red
+
+  agente13:
+    image: pest-talabre-agente-local
+    container_name: agente13
+    networks:
+      - mi_red
+
+  agente14:
+    image: pest-talabre-agente-local
+    container_name: agente14
+    networks:
+      - mi_red
+
+  agente15:
+    image: pest-talabre-agente-local
+    container_name: agente15
+    networks:
+      - mi_red
+
+  agente16:
+    image: pest-talabre-agente-local
+    container_name: agente16
+    networks:
+      - mi_red
+
+  agente17:
+    image: pest-talabre-agente-local
+    container_name: agente17
+    networks:
+      - mi_red
+
+  agente18:
+    image: pest-talabre-agente-local
+    container_name: agente18
+    networks:
+      - mi_red
+
+  agente19:
+    image: pest-talabre-agente-local
+    container_name: agente19
+    networks:
+      - mi_red
+
+  agente20:
+    image: pest-talabre-agente-local
+    container_name: agente20
+    networks:
+      - mi_red
+  agente21:
+    image: pest-talabre-agente-local
+    container_name: agente21
+    networks:
+      - mi_red
+
+  agente22:
+    image: pest-talabre-agente-local
+    container_name: agente22
+    networks:
+      - mi_red
+
+  agente23:
+    image: pest-talabre-agente-local
+    container_name: agente23
+    networks:
+      - mi_red
+
+  agente24:
+    image: pest-talabre-agente-local
+    container_name: agente24
+    networks:
+      - mi_red
+
+  agente25:
+    image: pest-talabre-agente-local
+    container_name: agente25
+    networks:
+      - mi_red
+
+  agente26:
+    image: pest-talabre-agente-local
+    container_name: agente26
+    networks:
+      - mi_red
+
+  agente27:
+    image: pest-talabre-agente-local
+    container_name: agente27
+    networks:
+      - mi_red
+
+  agente28:
+    image: pest-talabre-agente-local
+    container_name: agente28
+    networks:
+      - mi_red
+
+  agente29:
+    image: pest-talabre-agente-local
+    container_name: agente29
+    networks:
+      - mi_red
+
+  agente30:
+    image: pest-talabre-agente-local
+    container_name: agente30
+    networks:
+      - mi_red
+      
+networks:
+  mi_red:
+    driver: bridge
