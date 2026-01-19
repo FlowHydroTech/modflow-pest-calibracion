@@ -1,584 +1,621 @@
-############################################
-# Terraform y providers
-############################################
-terraform {
-  required_version = ">= 1.6.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 5.0"
+locals {
+  default_tags = merge(
+    var.common_tags,
+    {
+      Region  = var.aws_region,
+      Project = var.project_name
     }
-  }
+  )
 }
 
-# Usar solo el provider por defecto en west-2
-provider "aws" {
-  region = var.region_east2
+resource "aws_cloudwatch_log_group" "ecs_logs_pest_autonomo" {
+  name              = "/ecs/${var.project_name}-${var.aws_region}-autonomo"
+  retention_in_days = 30
+  tags              = local.default_tags
 }
 
-provider "aws" {
-  alias  = "s3"
-  region = "us-east-1"
+resource "aws_cloudwatch_log_group" "ecs_logs_pest_master" {
+  name              = "/ecs/${var.project_name}-${var.aws_region}-master"
+  retention_in_days = 30
+  tags              = local.default_tags
 }
 
-############################################
-# Data: AZs
-############################################
-data "aws_availability_zones" "east2" {}
-
-############################################
-# VPC us-west-2 (central)
-############################################
-resource "aws_vpc" "east2" {
-  cidr_block           = var.vpc_cidr_east2
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-  tags = { Name = "${var.project_name}-vpc-east2" }
+resource "aws_cloudwatch_log_group" "ecs_logs_pest_agente" {
+  name              = "/ecs/${var.project_name}-${var.aws_region}-agente"
+  retention_in_days = 30
+  tags              = local.default_tags
 }
 
-resource "aws_internet_gateway" "east2" {
-  vpc_id = aws_vpc.east2.id
-  tags = { Name = "${var.project_name}-igw-east2" }
-}
-
-resource "aws_subnet" "east2_public" {
-  vpc_id                  = aws_vpc.east2.id
-  cidr_block              = var.subnet_public_east2
-  availability_zone       = data.aws_availability_zones.east2.names[0]
-  map_public_ip_on_launch = true
-  tags = { Name = "${var.project_name}-subnet-public-east2" }
-}
-
-resource "aws_subnet" "east2_private" {
-  vpc_id            = aws_vpc.east2.id
-  cidr_block        = var.subnet_private_east2
-  availability_zone = data.aws_availability_zones.east2.names[1]
-  tags = { Name = "${var.project_name}-subnet-private-east2" }
-}
-
-resource "aws_eip" "east2_nat_eip" {
-  domain = "vpc"
-  tags = { Name = "${var.project_name}-nat-eip-east2" }
-}
-
-resource "aws_nat_gateway" "east2" {
-  allocation_id = aws_eip.east2_nat_eip.id
-  subnet_id     = aws_subnet.east2_public.id
-  tags = { Name = "${var.project_name}-nat-east2" }
-  depends_on = [aws_internet_gateway.east2]
-}
-
-resource "aws_route_table" "east2_public" {
-  vpc_id = aws_vpc.east2.id
-  tags   = { Name = "${var.project_name}-rt-public-east2" }
-}
-
-resource "aws_route" "east2_public_inet" {
-  route_table_id         = aws_route_table.east2_public.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.east2.id
-}
-
-resource "aws_route_table_association" "east2_public_assoc" {
-  route_table_id = aws_route_table.east2_public.id
-  subnet_id      = aws_subnet.east2_public.id
-}
-
-resource "aws_route_table" "east2_private" {
-  vpc_id = aws_vpc.east2.id
-  tags   = { Name = "${var.project_name}-rt-private-east2" }
-}
-
-resource "aws_route" "east2_private_nat" {
-  route_table_id         = aws_route_table.east2_private.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.east2.id
-}
-
-resource "aws_route_table_association" "east2_private_assoc" {
-  route_table_id = aws_route_table.east2_private.id
-  subnet_id      = aws_subnet.east2_private.id
-}
-
-############################################
-# S3 bucket para escritura del nodo central
-############################################
-data "aws_s3_bucket" "results" {
-  provider = aws.s3
-  bucket = var.s3_bucket_name
-}
-
-############################################
-# IAM para nodo central (EC2 -> ECR, S3 y Cloudwatch)
-############################################
-resource "aws_iam_role" "central_role" {
-  name = "${var.project_name}-${var.region_east2}-central-ec2-role"
+resource "aws_iam_role" "ecs_task_execution" {
+  name = "${var.project_name}-ecsTaskExecution-${var.aws_region}"
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17",
+    Version = "2012-10-17",
     Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "ec2.amazonaws.com" },
-      Action    = "sts:AssumeRole"
+      Effect = "Allow",
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      },
+      Action = "sts:AssumeRole"
     }]
   })
+  tags = local.default_tags
 }
 
-resource "aws_iam_policy" "central_s3_policy" {
-  name        = "${var.project_name}-${var.region_east2}-central-s3-write"
-  description = "Permitir escritura en el bucket S3 de resultados."
-  policy      = jsonencode({
-    Version   = "2012-10-17",
+# IAM Role para la tarea (acceso a S3) (ya existe, creado previamente)
+resource "aws_iam_role" "task_role" {
+  name = "${var.project_name}-ecsTaskS3WriteRole-${var.aws_region}"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = { Service = "ecs-tasks.amazonaws.com" },
+      Action = "sts:AssumeRole"
+    }]
+  })
+  tags = local.default_tags
+}
+
+resource "aws_iam_policy" "s3_write_policy" {
+  name   = "${var.project_name}-S3WritePolicy-${var.aws_region}"
+  policy = jsonencode({ 
+    Version = "2012-10-17",
     Statement = [
       {
-        Sid      = "S3WriteResults",
-        Effect   = "Allow",
-        Action   = ["s3:PutObject", "s3:AbortMultipartUpload", "s3:ListBucket", "s3:PutObjectAcl"],
-        Resource = [
-          data.aws_s3_bucket.results.arn,
-          "${data.aws_s3_bucket.results.arn}/*"
-        ]
-      },
-      {
-        Sid      = "ECRAuthAndPull",
-        Effect   = "Allow",
-        Action   = [
-          "ecr:GetAuthorizationToken",
-          "ecr:BatchGetImage",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:DescribeRepositories",
-          "ecr:BatchCheckLayerAvailability"
+        Sid = "S3WriteResults",
+        Effect = "Allow",
+        Action = [
+          "s3:PutObject",
+          "s3:AbortMultipartUpload",
+          "s3:ListBucket",
+          "s3:PutObjectAcl"
         ],
-        Resource = "*"
-      },
+        Resource = [
+          "arn:aws:s3:::${var.s3_bucket}",
+          "arn:aws:s3:::${var.s3_bucket}/*"
+        ]
+      }
+    ]
+   }) 
+  tags = local.default_tags
+}
+
+resource "aws_iam_role_policy_attachment" "attach_s3_write" {
+  role       = aws_iam_role.task_role.name
+  policy_arn = aws_iam_policy.s3_write_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "logs_execution" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Policy to allow the ECS task execution role to get ECR authorization token
+resource "aws_iam_policy" "ecr_get_auth_policy" {
+  name = "${var.project_name}-ECRGetAuthorizationToken-${var.aws_region}"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
       {
-        Sid      = "LogsBasic",
-        Effect   = "Allow",
-        Action   = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
+        Effect = "Allow",
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer"
         ],
         Resource = "*"
       }
     ]
   })
+  tags = local.default_tags
 }
 
-resource "aws_iam_role_policy_attachment" "attach_central_s3" {
-  role       = aws_iam_role.central_role.name
-  policy_arn = aws_iam_policy.central_s3_policy.arn
+resource "aws_iam_role_policy_attachment" "attach_ecr_get_auth" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = aws_iam_policy.ecr_get_auth_policy.arn
 }
 
-resource "aws_iam_policy" "central_logs_policy" {
-  name        = "${var.project_name}-${var.region_east2}-central-logs-policy"
-  description = "Permitir al EC2 enviar logs a CloudWatch Logs"
-  policy      = jsonencode({
-    Version   = "2012-10-17",
-    Statement = [{
-      Effect   = "Allow",
-      Action   = [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      Resource = "*"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "attach_central_logs" {
-  role       = aws_iam_role.central_role.name
-  policy_arn = aws_iam_policy.central_logs_policy.arn
-}
-
-resource "aws_iam_role_policy_attachment" "central_ssm_attach" {
-  role       = aws_iam_role.central_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_instance_profile" "central_profile" {
-  name = "${var.project_name}-${var.region_east2}-central-instance-profile"
-  role = aws_iam_role.central_role.name
-}
-
-
-############################################
-# IAM para nodo central (EC2 -> Cloudwatch)
-############################################
-
-resource "aws_iam_role" "ec2_cloudwatch_role" {
-  name = "${var.project_name}-${var.region_east2}-ec2-cloudwatch-role"
-  assume_role_policy = jsonencode({
-    Version   = "2012-10-17",
-    Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "ec2.amazonaws.com" },
-      Action    = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ec2_cloudwatch_attach" {
-  role       = aws_iam_role.ec2_cloudwatch_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-}
-
-resource "aws_iam_instance_profile" "ec2_cloudwatch_profile" {
-  name = "${var.project_name}-${var.region_east2}-ec2-cloudwatch-profile"
-  role = aws_iam_role.ec2_cloudwatch_role.name
-}
-
-############################################
-# IAM para nodos host (FARGATE -> ECR)
-############################################
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "${var.project_name}-${var.region_east2}-ecs-task-execution-role"
-  assume_role_policy = jsonencode({
-    Version   = "2012-10-17",
-    Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "ecs-tasks.amazonaws.com" },
-      Action    = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-
-############################################
-# Security Groups: central y hosts
-############################################
-# SG del nodo central: permite 4004/TCP e ICMP desde VPC east2 (solo)
-resource "aws_security_group" "central_sg" {
-  name        = "${var.project_name}-${var.region_east2}-central-sg"
-  description = "Acceso al puerto PEST y ping desde la VPC central"
-  vpc_id      = aws_vpc.east2.id
-  tags        = { Name = "${var.project_name}-central-sg" }
-}
-
-# Inbound 4004 desde CIDR de la VPC east2 (quitar reglas que apuntaban a east2/east2)
-resource "aws_security_group_rule" "central_in_tcp_east2" {
-  type              = "ingress"
-  security_group_id = aws_security_group.central_sg.id
-  from_port         = var.pest_port
-  to_port           = var.pest_port
-  protocol          = "tcp"
-  cidr_blocks       = [var.vpc_cidr_east2]
-}
-
-# Inbound ICMP (ping) desde CIDR de la VPC east2 (quitar reglas east2/east2)
-resource "aws_security_group_rule" "central_in_icmp_east2" {
-  type              = "ingress"
-  security_group_id = aws_security_group.central_sg.id
-  from_port         = -1
-  to_port           = -1
-  protocol          = "icmp"
-  cidr_blocks       = [var.vpc_cidr_east2]
-}
-
-# Outbound permitir todo
-resource "aws_security_group_rule" "central_out_all" {
-  type              = "egress"
-  security_group_id = aws_security_group.central_sg.id
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-# Security Group para VPC Endpoints Interface (ECR API y ECR DKR) - mantiene en east2
-resource "aws_security_group" "endpoint" {
-  name        = "${var.project_name}-${var.region_east2}-endpoint-sg"
-  description = "Permitir trafico interno en 443 hacia los endpoints de ECR"
-  vpc_id      = aws_vpc.east2.id
-
-  # Permitir tráfico entrante en HTTPS desde las subnets privadas
-  ingress {
-    description = "HTTPS desde subnets privadas"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = [aws_vpc.east2.cidr_block]  # todo el rango de la VPC
-  }
-
-  # Permitir todo el tráfico de salida
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-${var.region_east2}-endpoint-sg"
-  }
-}
-
-
-# SG para hosts en east2 (mantener)
-resource "aws_security_group" "host_east2_sg" {
-  name        = "${var.project_name}-host-east2-sg"
-  description = "Hosts permiten 4004/TCP e ICMP desde VPC central"
-  vpc_id      = aws_vpc.east2.id
-  tags        = { Name = "${var.project_name}-host-east2-sg" }
-}
-
-resource "aws_security_group_rule" "host_east2_in_tcp" {
-  type              = "ingress"
-  security_group_id = aws_security_group.host_east2_sg.id
-  from_port         = var.pest_port
-  to_port           = var.pest_port
-  protocol          = "tcp"
-  cidr_blocks       = [var.vpc_cidr_east2]
-}
-resource "aws_security_group_rule" "host_east2_in_icmp" {
-  type              = "ingress"
-  security_group_id = aws_security_group.host_east2_sg.id
-  from_port         = -1
-  to_port           = -1
-  protocol          = "icmp"
-  cidr_blocks       = [var.vpc_cidr_east2]
-}
-resource "aws_security_group_rule" "host_east2_out_all" {
-  type              = "egress"
-  security_group_id = aws_security_group.host_east2_sg.id
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-############################################
-# EC2 nodo central (us-west-2)
-############################################
-data "aws_ami" "amazon_linux_2" {
-  owners      = ["amazon"]
-  most_recent = true
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-  }
-}
-
-resource "aws_instance" "central" {
-  ami                         = data.aws_ami.amazon_linux_2.id
-  instance_type               = "t3.large"
-  subnet_id                   = aws_subnet.east2_private.id
-  private_ip                  = var.central_private_ip
-  associate_public_ip_address = false
-  iam_instance_profile        = aws_iam_instance_profile.central_profile.name
-  vpc_security_group_ids      = [aws_security_group.central_sg.id]
-  tags = {
-    Name = "${var.project_name}-central-ec2"
-    Role = "central-node"
-    Servicio = "PEST"
-    Owner = "Modelamiento Numerico"
-  }
-  root_block_device {
-    volume_size = 50   # tamaño en GB
-    volume_type = "gp3"
-  }
-
-  user_data = <<-EOF
-    #!/bin/bash
-    set -xe
-
-    yum update -y
-    yum install -y amazon-cloudwatch-agent docker awscli iputils 
-
-    systemctl enable docker
-    systemctl start docker
-
-    # Crear directorio para modelo
-    mkdir -p /app/modelo
-
-    # Configuración CloudWatch Agent
-    cat <<CWAGENTCFG >/opt/aws/amazon-cloudwatch-agent/bin/config.json
-    {
-      "logs": {
-        "logs_collected": {
-          "files": {
-            "collect_list": [
-              {
-                "file_path": "/var/log/messages",
-                "log_group_name": "${var.project_name}-ec2-central",
-                "log_stream_name": "system-messages",
-                "timestamp_format": "%b %d %H:%M:%S"
-              },
-              {
-                "file_path": "/var/log/cloud-init.log",
-                "log_group_name": "${var.project_name}-ec2-central",
-                "log_stream_name": "cloud-init",
-                "timestamp_format": "%Y-%m-%d %H:%M:%S"
-              }
-            ]
+# Policy para permitir ECS Exec (SSM Session Manager)
+resource "aws_iam_policy" "ecs_exec_policy" {
+  name = "${var.project_name}-ECSExecPolicy-${var.aws_region}"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid = "AllowSSMMessages",
+        Effect = "Allow",
+        Action = [
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ],
+        Resource = "*"
+      },
+      {
+        Sid = "AllowECSExecLogging",
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/ecs/*"
+      },
+      {
+        Sid = "AllowKMSDecrypt",
+        Effect = "Allow",
+        Action = [
+          "kms:Decrypt"
+        ],
+        Resource = "*",
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "ssmmessages.${var.aws_region}.amazonaws.com"
           }
         }
       }
+    ]
+  })
+  tags = local.default_tags
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ecs_exec" {
+  role       = aws_iam_role.task_role.name
+  policy_arn = aws_iam_policy.ecs_exec_policy.arn
+}
+
+resource "aws_ecs_cluster" "cluster-pest" {
+  name = "${var.project_name}-cluster-${var.aws_region}"
+  tags = local.default_tags
+}
+
+# Security Group para el master (acceso TCP:4004)
+resource "aws_security_group" "ecs_master_sg" {
+  name                   = "${var.project_name}-master-sg-${var.aws_region}"
+  description            = "Allow TCP 4004 from ECS tasks group"
+  vpc_id                 = var.vpc_id
+  revoke_rules_on_delete = true
+  tags                   = local.default_tags
+}
+
+# Security Group para las tareas (clientes)
+resource "aws_security_group" "ecs_tasks_sg" {
+  name                   = "${var.project_name}-tasks-sg-${var.aws_region}"
+  description            = "SG for ECS tasks"
+  vpc_id                 = var.vpc_id
+  revoke_rules_on_delete = true
+  tags                   = local.default_tags
+}
+
+# Permitir desde tareas hacia master en 4004
+resource "aws_security_group_rule" "allow_tasks_to_master" {
+  type                     = "ingress"
+  from_port                = var.pest_port
+  to_port                  = var.pest_port
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_master_sg.id
+  source_security_group_id = aws_security_group.ecs_tasks_sg.id
+}
+
+# Security group for VPC interface endpoints (ECR / STS / Logs)
+resource "aws_security_group" "vpc_endpoints_sg" {
+  name                   = "${var.project_name}-endpoints-sg-${var.aws_region}"
+  description            = "SG attached to VPC interface endpoints (ECR, STS, Logs)"
+  vpc_id                 = var.vpc_id
+  revoke_rules_on_delete = true
+  tags                   = local.default_tags
+}
+
+# Allow ECS tasks to connect to the endpoints on HTTPS
+resource "aws_security_group_rule" "endpoint_allow_from_tasks" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.vpc_endpoints_sg.id
+  source_security_group_id = aws_security_group.ecs_tasks_sg.id
+}
+
+# Allow master to connect to the endpoints on HTTPS
+resource "aws_security_group_rule" "endpoint_allow_from_master" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.vpc_endpoints_sg.id
+  source_security_group_id = aws_security_group.ecs_master_sg.id
+}
+
+# Allow VPC endpoint ENIs to send responses (egress) to the network
+resource "aws_security_group_rule" "vpc_endpoints_allow_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.vpc_endpoints_sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+# Private DNS namespace para service discovery
+resource "aws_service_discovery_private_dns_namespace" "sd_namespace" {
+  name = "${var.project_name}.local"
+  vpc  = var.vpc_id
+  description = "Private DNS namespace for ${var.project_name}"
+  tags = local.default_tags
+}
+
+# Cloud Map service para el master
+resource "aws_service_discovery_service" "master_sd" {
+  name = "master"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.sd_namespace.id
+    dns_records {
+      ttl  = 60
+      type = "A"
     }
-  CWAGENTCFG
-
-    # Iniciar CloudWatch Agent
-    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-      -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
-
-    # Cron job para sincronizar con S3 cada 1 hora
-    BUCKET_NAME=${var.s3_bucket_name}
-    CRON_CMD="aws s3 cp /app/modelo s3://312019940349-pest-mod-res-ensi/modelo --recursive"
-    (crontab -l 2>/dev/null; echo "0 * * * * $CRON_CMD") | crontab -
-
-    # Login ECR y ejecutar contenedor central
-    REGION=${var.region_east2}
-    CENTRAL_IMAGE=${var.ecr_image_central}
-
-    aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $(echo $CENTRAL_IMAGE | cut -d'/' -f1)
-
-    docker pull $CENTRAL_IMAGE
-
-    # Poblar /app/modelo en el host con el contenido de la imagen si está vacío
-    if [ -z "$(ls -A /app/modelo 2>/dev/null)" ]; then
-      echo "Rellenando /app/modelo desde la imagen $CENTRAL_IMAGE"
-      docker create --name tmp-populate "$CENTRAL_IMAGE"
-      # Copia el contenido del contenedor a la ruta del host
-      docker cp tmp-populate:/app/modelo/. /app/modelo/
-      docker rm tmp-populate
-    fi
-
-    docker run -d --name pest-central \
-      -p ${var.pest_port}:${var.pest_port} \
-      -v /app/modelo:/app/modelo \
-      --log-driver=awslogs \
-      --log-opt awslogs-region=${var.region_east2} \
-      --log-opt awslogs-group=${var.project_name}-ec2-central-container \
-      --log-opt awslogs-stream=pest-central \
-      --restart=always \
-      $CENTRAL_IMAGE
-  EOF
-
-  depends_on = [
-    aws_nat_gateway.east2
-  ]
-}
-
-############################################
-# ECS Clusters (hosts) por región
-############################################
-# us-west-2 cluster
-resource "aws_ecs_cluster" "east2" {
-  name = "${var.project_name}-ecs-east2"
-  setting {
-    name  = "containerInsights"
-    value = "enabled"
+    routing_policy = "MULTIVALUE"
   }
-}
-
-# Capacity providers Fargate Spot
-resource "aws_ecs_cluster_capacity_providers" "east2" {
-  cluster_name       = aws_ecs_cluster.east2.name
-  capacity_providers = ["FARGATE_SPOT"]
-  default_capacity_provider_strategy {
-    capacity_provider = "FARGATE_SPOT"
-    weight            = 1
+  health_check_custom_config {
+    failure_threshold = 1
   }
+  tags = local.default_tags
 }
 
-############################################
-# CloudWatch Logs para EC2 central
-############################################
-
-resource "aws_cloudwatch_log_group" "ec2_central_logs" {
-  name              = "${var.project_name}-ec2-central"
-  retention_in_days = 30
+# Regla de egress para el security group del master
+resource "aws_security_group_rule" "master_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.ecs_master_sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
 }
 
-############################################
-# CloudWatch Logs para tareas y EC2 Central
-############################################
-resource "aws_cloudwatch_log_group" "hosts" {
-  name              = "/ecs/${var.project_name}/hosts"
-  retention_in_days = 30
+# Regla de egress para el security group de las tareas
+resource "aws_security_group_rule" "tasks_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.ecs_tasks_sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
 }
 
-resource "aws_cloudwatch_log_group" "ec2_central_container_logs" {
-  name              = "${var.project_name}-ec2-central-container"
-  retention_in_days = 30
+/* VPC Endpoints to allow Fargate tasks in private subnets to reach ECR, STS and S3
+   - Interface endpoints for ECR API, ECR DKR and STS
+   - Gateway endpoint for S3 (requires route table IDs)
+*/
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.ecr.api"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = var.private_subnet_ids
+  security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
+  private_dns_enabled = true
+  tags = local.default_tags
 }
 
-############################################
-# ECS Task Definitions (host) por región
-############################################
-locals {
-  host_container_name = "pest-host"
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.ecr.dkr"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = var.private_subnet_ids
+  security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
+  private_dns_enabled = true
+  tags = local.default_tags
 }
 
-# east2 task def
-resource "aws_ecs_task_definition" "host_east2" {
-  family                   = "${var.project_name}-host-east2"
+resource "aws_vpc_endpoint" "sts" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.sts"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = var.private_subnet_ids
+  security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
+  private_dns_enabled = true
+  tags = local.default_tags
+}
+
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.logs"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = var.private_subnet_ids
+  security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
+  private_dns_enabled = true
+  tags = local.default_tags
+}
+
+# VPC Endpoints para ECS Exec (SSM)
+resource "aws_vpc_endpoint" "ssm" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.ssm"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = var.private_subnet_ids
+  security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
+  private_dns_enabled = true
+  tags = local.default_tags
+}
+
+resource "aws_vpc_endpoint" "ssmmessages" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.ssmmessages"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = var.private_subnet_ids
+  security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
+  private_dns_enabled = true
+  tags = local.default_tags
+}
+
+resource "aws_vpc_endpoint" "ec2messages" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.ec2messages"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = var.private_subnet_ids
+  security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
+  private_dns_enabled = true
+  tags = local.default_tags
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  count             = length(var.private_route_table_ids) > 0 ? 1 : 0
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = var.private_route_table_ids
+  tags = local.default_tags
+}
+
+# Security group rules to allow tasks/master to reach the interface endpoints (HTTPS)
+# Interface endpoints have ENIs that use the security groups we attached above.
+# We must allow inbound TCP/443 to those SGs from the ECS tasks/master SGs.
+resource "aws_security_group_rule" "allow_tasks_to_endpoints_https_self" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_tasks_sg.id
+  source_security_group_id = aws_security_group.ecs_tasks_sg.id
+}
+
+resource "aws_security_group_rule" "allow_tasks_to_endpoints_https_master" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_master_sg.id
+  source_security_group_id = aws_security_group.ecs_tasks_sg.id
+}
+
+resource "aws_security_group_rule" "allow_master_to_endpoints_https_self" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_master_sg.id
+  source_security_group_id = aws_security_group.ecs_master_sg.id
+}
+
+resource "aws_ecs_task_definition" "task-pest-autonomo" {
+  family                   = "${var.project_name}-task-${var.aws_region}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "1024"
   memory                   = "2048"
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.task_role.arn
+  tags                     = local.default_tags
 
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
-
-  runtime_platform {
-    operating_system_family = "LINUX"
-    cpu_architecture        = "X86_64"
-  }
-  container_definitions = jsonencode([
-    {
-      name      = local.host_container_name,
-      image     = var.ecr_image_host_east2,
-      essential = true,
-      cpu       = 1024,
-      memory    = 2048,
-      portMappings = [
-        { containerPort = var.pest_port, hostPort = var.pest_port, protocol = "tcp" }
-      ],
-      logConfiguration = {
-        logDriver = "awslogs",
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.hosts.name,
-          awslogs-region        = var.region_east2,
-          awslogs-stream-prefix = "ecs"
-        }
+  container_definitions = jsonencode([{
+    name      = "${var.project_name}-container"
+    image     = var.ecr_image
+    essential = true
+    command   = ["/bin/bash", "/app/entrypoint_autonomo.sh"]
+    environment = [
+        { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
+        { name = "EJECUTABLE_AUTONOMO", value = var.ejecutable_autonomo },
+        { name = "BUCKET_NAME", value = var.s3_bucket },
+        { name = "PROJECT_NAME", value = var.project_name },
+        { name = "AWS_REGION", value = var.aws_region }
+        ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_pest_autonomo.name
+        awslogs-region        = var.aws_region
+        awslogs-stream-prefix = "ecs"
       }
     }
-  ])
+  }])
 }
 
-############################################
-# ECS Services (host) por región
-############################################
-resource "aws_ecs_service" "host_east2" {
-  name                = "${var.project_name}-host-service-east2"
-  cluster             = aws_ecs_cluster.east2.id
-  task_definition     = aws_ecs_task_definition.host_east2.arn
-  desired_count       = var.desired_hosts_east2
-  #se comenta para usar capacity providers
-  launch_type         = "FARGATE"
-  platform_version    = "LATEST"
-  enable_ecs_managed_tags = true
-  propagate_tags      = "SERVICE"
+# Task definition para el master
+resource "aws_ecs_task_definition" "task-pest-master" {
+  family                   = "${var.project_name}-task-master-${var.aws_region}"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "2048"
+  memory                   = "10240"     # 10 GB
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.task_role.arn
+  tags                     = local.default_tags
 
-  #mezcla Spot + OnDemand (fallback)
-  # capacity_provider_strategy {
-  #   capacity_provider = "FARGATE_SPOT"
-  #   weight            = 7
-  # }
-  # capacity_provider_strategy {
-  #   capacity_provider = "FARGATE"
-  #   weight            = 3
-  # }
+  ephemeral_storage {
+    size_in_gib = 30    #ajuste considerando tamaño de la imagen y archivos generados por el modelo en el master
+  }
+
+  container_definitions = jsonencode([{
+    name      = "${var.project_name}-master"
+    image     = var.ecr_image
+    essential = true
+    command   = ["/bin/bash", "/app/entrypoint_master.sh"]
+    environment = [
+      { name = "BUCKET_NAME", value = var.s3_bucket },
+      { name = "EJECUTABLE_MASTER", value = var.ejecutable_master },
+      { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
+      { name = "PEST_PORT", value = tostring(var.pest_port) },
+      { name = "PROJECT_NAME", value = var.project_name },
+      { name = "AWS_REGION", value = var.aws_region },
+      { name = "JACOBIANO_NAME", value = var.nombre_jacobiano }
+    ]
+    portMappings = [
+      { containerPort = 4004, protocol = "tcp" }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_pest_master.name
+        awslogs-region        = var.aws_region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+}
+
+# Task definition para el agente
+resource "aws_ecs_task_definition" "task-pest-agente" {
+  family                   = "${var.project_name}-task-agente-${var.aws_region}"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "1024"
+  memory                   = "3072"
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.task_role.arn
+  tags                     = local.default_tags
+
+  ephemeral_storage {
+    size_in_gib = 30    #ajuste considerando tamaño de la imagen y archivos generados por el modelo en el master
+  }
+
+  container_definitions = jsonencode([{
+    name      = "${var.project_name}-agente"
+    image     = var.ecr_image
+    essential = true
+    command   = ["/bin/bash", "/app/entrypoint_agent.sh"]
+    environment = [
+        { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
+        { name = "EJECUTABLE_AGENTE", value = var.ejecutable_agente },
+        { name = "MASTER_HOST", value = "master.${var.project_name}.local" },
+        { name = "PEST_PORT", value = tostring(var.pest_port) },
+        { name = "BUCKET_NAME", value = var.s3_bucket },
+        { name = "PROJECT_NAME", value = var.project_name },
+        { name = "AWS_REGION", value = var.aws_region }
+        ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_pest_agente.name
+        awslogs-region        = var.aws_region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+}
+
+# Task definition para el agente-stop
+# resource "aws_ecs_task_definition" "task-pest-agente-stop" {
+#   family                   = "${var.project_name}-task-agente-stop-${var.aws_region}"
+#   requires_compatibilities = ["FARGATE"]
+#   network_mode             = "awsvpc"
+#   cpu                      = "1024"
+#   memory                   = "2048"
+#   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+#   task_role_arn            = aws_iam_role.task_role.arn
+#   tags                     = local.default_tags
+
+#   container_definitions = jsonencode([{
+#     name      = "${var.project_name}-agente-stop"
+#     image     = var.ecr_image_stop
+#     essential = true
+#     command   = ["/bin/bash", "/app/entrypoint_agent.sh"]
+#     environment = [
+#         { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
+#         { name = "EJECUTABLE_AGENTE", value = var.ejecutable_agente },
+#         { name = "MASTER_HOST", value = "master.${var.project_name}.local" },
+#         { name = "PEST_PORT", value = tostring(var.pest_port) },
+#         { name = "BUCKET_NAME", value = var.s3_bucket },
+#         { name = "PROJECT_NAME", value = var.project_name },
+#         { name = "AWS_REGION", value = var.aws_region }
+#         ]
+#     logConfiguration = {
+#       logDriver = "awslogs"
+#       options = {
+#         awslogs-group         = aws_cloudwatch_log_group.ecs_logs_pest_agente.name
+#         awslogs-region        = var.aws_region
+#         awslogs-stream-prefix = "ecs" 
+#       }
+#     }
+#   }])
+# }
+
+# ECS Service para el master con Service Discovery
+resource "aws_ecs_service" "master_service" {
+  name                   = "${var.project_name}-master-service"
+  cluster                = aws_ecs_cluster.cluster-pest.id
+  task_definition        = aws_ecs_task_definition.task-pest-master.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  enable_execute_command = true
+  force_new_deployment   = true
 
   network_configuration {
-    subnets         = [aws_subnet.east2_private.id]
-    security_groups = [aws_security_group.host_east2_sg.id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [aws_security_group.ecs_master_sg.id]
     assign_public_ip = false
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.master_sd.arn
+  }
+
+  tags = local.default_tags
+
+  depends_on = [
+    aws_service_discovery_service.master_sd,
+    aws_ecs_task_definition.task-pest-master,
+    aws_iam_role_policy_attachment.attach_ecs_exec,
+    aws_iam_role_policy_attachment.attach_s3_write
+  ]
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+}
+
+#Esperar 2 minutos para asegurar que el master esté listo antes de iniciar los agentes
+resource "time_sleep" "wait_2_minutes" {
+  create_duration = "1m"
+  
+  triggers = {
+    agent_run_id = var.agent_run_id
+  }
+}
+
+# Ejecutar los agentes con run-task (one-shot). Cambiar `agent_run_id` fuerza una nueva ejecución.
+resource "null_resource" "run_agent_once" {
+  triggers = {
+    agent_run_id = var.agent_run_id
+    agent_count  = tostring(var.agent_count)
+  }
+
+  depends_on = [
+    time_sleep.wait_2_minutes,
+    aws_ecs_task_definition.task-pest-agente,
+    aws_security_group.ecs_tasks_sg
+  ]
+
+  provisioner "local-exec" {
+    interpreter = ["PowerShell", "-Command"]
+    command = <<EOT
+$path = [System.IO.Path]::Combine($env:TEMP, "agent_network.json")
+$json = '${jsonencode({awsvpcConfiguration = { subnets = var.private_subnet_ids, securityGroups = [aws_security_group.ecs_tasks_sg.id], assignPublicIp = "DISABLED" } })}'
+[System.IO.File]::WriteAllBytes($path, [System.Text.Encoding]::UTF8.GetBytes($json))
+aws ecs run-task --region ${var.aws_region} --cluster ${aws_ecs_cluster.cluster-pest.name} --launch-type FARGATE --task-definition ${aws_ecs_task_definition.task-pest-agente.arn} --count ${var.agent_count} --enable-execute-command --network-configuration file://$path
+Remove-Item $path -Force
+EOT
   }
 }

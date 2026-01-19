@@ -1,43 +1,38 @@
-variable "project_name" {
-  type        = string
-  default     = "pest-mod-res-ensi"
-}
-
-variable "s3_bucket_name" { default = "312019940349-pest-mod-res-ensi" }
-
+#configurar región AWS
+variable "aws_region" {default = "us-east-2" }
+#configurar VPC y subnets de la región seleccionada (deben ser privadas para mayor seguridad)
+variable "vpc_id" { default = "vpc-0d15e6b1598fd08ef" }
+variable "private_subnet_ids" {  default = ["subnet-017a501a7e052200f", "subnet-0357178626be5cf43"] }
+variable "private_route_table_ids" { default     = ["rtb-04dee429f7aa02db0"] }
+#nombre del modelo PEST que se debe ejecutar pest_hp.exe <nombre_modelo_pest> /h :4004
+variable "nombre_modelo_pest" { default = "mod_res_ensi.pst" }
+variable "ejecutable_autonomo" { default = "pest.exe" }
+variable "ejecutable_master" { default = "pest_hp.exe" }
+variable "ejecutable_agente" { default = "agent_hp.exe" }
+variable "nombre_jacobiano" { default = "mod_res_ensi.jco" }
+variable "pest_port" { default = 4004 }
+#nombre del proyecto para tags y nombres de recursos en AWS
+variable "project_name" { default = "mod-res-ensi" }
+variable "s3_bucket" { default = "312019940349-pest-mod-res-ensi-east-2" }
+variable "ecr_image" { default = "312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-mod-res-ensi:latest" }
+variable "ecr_image_stop" { default = "312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-mod-res-ensi-stop:latest" }
+#cantidad de agentes a levantar con run-task
+variable "agent_count" { default = 1 }
 variable "common_tags" {
   type = map(string)
   default = {
-    Service = "PEST"
-    Project = "pest-mod-res-ensi"
+    Service = "FARGATE"
     Owner   = "Modelamiento Numerico"
   }
 }
 
-# URLs completas de las imágenes en ECR (incluyendo tag)
-variable "ecr_image_central" {
+variable "master_run_id" {
+  description = "Identificador que fuerza la ejecución puntual del master cuando cambia. Dejar vacío para no ejecutar."
   type        = string
-  description = "Imagen ECR para el nodo central en us-east-2"
-  default     = "312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-mod-res-ensi-master:latest"
+  default     = "master-001"
 }
-
-variable "ecr_image_host_east2" {
+variable "agent_run_id" {
+  description = "Identificador que fuerza la ejecución puntual de los agentes cuando cambia. Dejar vacío para no ejecutar."
   type        = string
-  description = "Imagen ECR para los hosts en us-east-2"
-  default     = "312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-mod-res-ensi-agente:latest"
+  default     = "agente"
 }
-
-variable "region_east2" { default = "us-east-2" }
-
-variable "vpc_cidr_east2" { default = "10.10.0.0/16" }
-
-variable "subnet_public_east2" { default = "10.10.0.0/21" }
-variable "subnet_private_east2" { default = "10.10.8.0/21" }
-
-variable "central_private_ip" { default = "10.10.10.10" }
-
-variable "pest_port" { default = 4004 }
-
-variable "desired_hosts_east2" { default = 22 }
-
-

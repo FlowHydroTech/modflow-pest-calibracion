@@ -1,24 +1,30 @@
-output "central_private_ip" {
-  value       = aws_instance.central.private_ip
-  description = "IP privada fija del nodo central EC2."
+output "ecs_tasks_sg_id" {
+	description = "Security Group ID used by ECS tasks"
+	value       = aws_security_group.ecs_tasks_sg.id
 }
 
-output "central_security_group_id" {
-  value       = aws_security_group.central_sg.id
-  description = "SG del nodo central."
+output "ecs_master_sg_id" {
+	description = "Security Group ID used by the ECS master task"
+	value       = aws_security_group.ecs_master_sg.id
 }
 
-output "ecr_central_repo_east2" {
-  value       = var.ecr_image_central
-  description = "Repo ECR central (us-east-2)."
+output "vpc_endpoints_sg_id" {
+	description = "Security Group ID attached to VPC interface endpoints"
+	value       = aws_security_group.vpc_endpoints_sg.id
 }
 
-output "ecr_host_repo_east2" {
-  value       = var.ecr_image_host_east2
-  description = "Repo ECR host (us-east-2)."
+output "ecs_cluster_name" {
+	description = "ECS cluster name"
+	value       = aws_ecs_cluster.cluster-pest.name
 }
 
-output "s3_results_bucket_name" {
-  value       = data.aws_s3_bucket.results.bucket
-  description = "Nombre del bucket S3 para resultados."
+output "task_definition_master_arn" {
+	description = "ARN of the master ECS task definition"
+	value       = aws_ecs_task_definition.task-pest-master.arn
 }
+
+output "task_definition_agent_arn" {
+	description = "ARN of the agent ECS task definition"
+	value       = aws_ecs_task_definition.task-pest-agente.arn
+}
+

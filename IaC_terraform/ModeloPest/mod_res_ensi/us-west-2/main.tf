@@ -8,19 +8,19 @@ locals {
   )
 }
 
-resource "aws_cloudwatch_log_group" "ecs_logs_talabre_autonomo" {
+resource "aws_cloudwatch_log_group" "ecs_logs_pest_autonomo" {
   name              = "/ecs/${var.project_name}-${var.aws_region}-autonomo"
   retention_in_days = 30
   tags              = local.default_tags
 }
 
-resource "aws_cloudwatch_log_group" "ecs_logs_talabre_master" {
+resource "aws_cloudwatch_log_group" "ecs_logs_pest_master" {
   name              = "/ecs/${var.project_name}-${var.aws_region}-master"
   retention_in_days = 30
   tags              = local.default_tags
 }
 
-resource "aws_cloudwatch_log_group" "ecs_logs_talabre_agente" {
+resource "aws_cloudwatch_log_group" "ecs_logs_pest_agente" {
   name              = "/ecs/${var.project_name}-${var.aws_region}-agente"
   retention_in_days = 30
   tags              = local.default_tags
@@ -168,7 +168,7 @@ resource "aws_iam_role_policy_attachment" "attach_ecs_exec" {
   policy_arn = aws_iam_policy.ecs_exec_policy.arn
 }
 
-resource "aws_ecs_cluster" "cluster-pest-talabre" {
+resource "aws_ecs_cluster" "cluster-pest" {
   name = "${var.project_name}-cluster-${var.aws_region}"
   tags = local.default_tags
 }
@@ -263,40 +263,6 @@ resource "aws_service_discovery_service" "master_sd" {
     failure_threshold = 1
   }
   tags = local.default_tags
-}
-
-# ECS Service para el master con Service Discovery
-resource "aws_ecs_service" "master_service" {
-  name                   = "${var.project_name}-master-service"
-  cluster                = aws_ecs_cluster.cluster-pest-talabre.id
-  task_definition        = aws_ecs_task_definition.task-pest-talabre-master.arn
-  desired_count          = 1
-  launch_type            = "FARGATE"
-  enable_execute_command = true
-  force_new_deployment   = true
-
-  network_configuration {
-    subnets          = var.private_subnet_ids
-    security_groups  = [aws_security_group.ecs_master_sg.id]
-    assign_public_ip = false
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.master_sd.arn
-  }
-
-  tags = local.default_tags
-
-  depends_on = [
-    aws_service_discovery_service.master_sd,
-    aws_ecs_task_definition.task-pest-talabre-master,
-    aws_iam_role_policy_attachment.attach_ecs_exec,
-    aws_iam_role_policy_attachment.attach_s3_write
-  ]
-
-  lifecycle {
-    ignore_changes = [desired_count]
-  }
 }
 
 # Regla de egress para el security group del master
@@ -434,7 +400,7 @@ resource "aws_security_group_rule" "allow_master_to_endpoints_https_self" {
   source_security_group_id = aws_security_group.ecs_master_sg.id
 }
 
-resource "aws_ecs_task_definition" "task-pest-talabre-autonomo" {
+resource "aws_ecs_task_definition" "task-pest-autonomo" {
   family                   = "${var.project_name}-task-${var.aws_region}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
@@ -459,7 +425,7 @@ resource "aws_ecs_task_definition" "task-pest-talabre-autonomo" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_talabre_autonomo.name
+        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_pest_autonomo.name
         awslogs-region        = var.aws_region
         awslogs-stream-prefix = "ecs"
       }
@@ -468,7 +434,7 @@ resource "aws_ecs_task_definition" "task-pest-talabre-autonomo" {
 }
 
 # Task definition para el master
-resource "aws_ecs_task_definition" "task-pest-talabre-master" {
+resource "aws_ecs_task_definition" "task-pest-master" {
   family                   = "${var.project_name}-task-master-${var.aws_region}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
@@ -493,7 +459,8 @@ resource "aws_ecs_task_definition" "task-pest-talabre-master" {
       { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
       { name = "PEST_PORT", value = tostring(var.pest_port) },
       { name = "PROJECT_NAME", value = var.project_name },
-      { name = "AWS_REGION", value = var.aws_region }
+      { name = "AWS_REGION", value = var.aws_region },
+      { name = "JACOBIANO_NAME", value = var.nombre_jacobiano }
     ]
     portMappings = [
       { containerPort = 4004, protocol = "tcp" }
@@ -501,7 +468,7 @@ resource "aws_ecs_task_definition" "task-pest-talabre-master" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_talabre_master.name
+        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_pest_master.name
         awslogs-region        = var.aws_region
         awslogs-stream-prefix = "ecs"
       }
@@ -510,16 +477,19 @@ resource "aws_ecs_task_definition" "task-pest-talabre-master" {
 }
 
 # Task definition para el agente
-resource "aws_ecs_task_definition" "task-pest-talabre-agente" {
+resource "aws_ecs_task_definition" "task-pest-agente" {
   family                   = "${var.project_name}-task-agente-${var.aws_region}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "1024"
-  memory                   = "2048"
+  memory                   = "3072"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
   tags                     = local.default_tags
 
+  ephemeral_storage {
+    size_in_gib = 30    #ajuste considerando tamaño de la imagen y archivos generados por el modelo en el agente
+  }
   container_definitions = jsonencode([{
     name      = "${var.project_name}-agente"
     image     = var.ecr_image
@@ -537,7 +507,7 @@ resource "aws_ecs_task_definition" "task-pest-talabre-agente" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_talabre_agente.name
+        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_pest_agente.name
         awslogs-region        = var.aws_region
         awslogs-stream-prefix = "ecs"
       }
@@ -546,39 +516,82 @@ resource "aws_ecs_task_definition" "task-pest-talabre-agente" {
 }
 
 # Task definition para el agente-stop
-resource "aws_ecs_task_definition" "task-pest-talabre-agente-stop" {
-  family                   = "${var.project_name}-task-agente-stop-${var.aws_region}"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "1024"
-  memory                   = "2048"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.task_role.arn
-  tags                     = local.default_tags
+# resource "aws_ecs_task_definition" "task-pest-agente-stop" {
+#   family                   = "${var.project_name}-task-agente-stop-${var.aws_region}"
+#   requires_compatibilities = ["FARGATE"]
+#   network_mode             = "awsvpc"
+#   cpu                      = "1024"
+#   memory                   = "2048"
+#   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+#   task_role_arn            = aws_iam_role.task_role.arn
+#   tags                     = local.default_tags
 
-  container_definitions = jsonencode([{
-    name      = "${var.project_name}-agente-stop"
-    image     = var.ecr_image_stop
-    essential = true
-    command   = ["/bin/bash", "/app/entrypoint_agent.sh"]
-    environment = [
-        { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
-        { name = "EJECUTABLE_AGENTE", value = var.ejecutable_agente },
-        { name = "MASTER_HOST", value = "master.${var.project_name}.local" },
-        { name = "PEST_PORT", value = tostring(var.pest_port) },
-        { name = "BUCKET_NAME", value = var.s3_bucket },
-        { name = "PROJECT_NAME", value = var.project_name },
-        { name = "AWS_REGION", value = var.aws_region }
-        ]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.ecs_logs_talabre_agente.name
-        awslogs-region        = var.aws_region
-        awslogs-stream-prefix = "ecs" 
-      }
-    }
-  }])
+#   container_definitions = jsonencode([{
+#     name      = "${var.project_name}-agente-stop"
+#     image     = var.ecr_image_stop
+#     essential = true
+#     command   = ["/bin/bash", "/app/entrypoint_agent.sh"]
+#     environment = [
+#         { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
+#         { name = "EJECUTABLE_AGENTE", value = var.ejecutable_agente },
+#         { name = "MASTER_HOST", value = "master.${var.project_name}.local" },
+#         { name = "PEST_PORT", value = tostring(var.pest_port) },
+#         { name = "BUCKET_NAME", value = var.s3_bucket },
+#         { name = "PROJECT_NAME", value = var.project_name },
+#         { name = "AWS_REGION", value = var.aws_region }
+#         ]
+#     logConfiguration = {
+#       logDriver = "awslogs"
+#       options = {
+#         awslogs-group         = aws_cloudwatch_log_group.ecs_logs_pest_agente.name
+#         awslogs-region        = var.aws_region
+#         awslogs-stream-prefix = "ecs" 
+#       }
+#     }
+#   }])
+# }
+
+# ECS Service para el master con Service Discovery
+resource "aws_ecs_service" "master_service" {
+  name                   = "${var.project_name}-master-service"
+  cluster                = aws_ecs_cluster.cluster-pest.id
+  task_definition        = aws_ecs_task_definition.task-pest-master.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  enable_execute_command = true
+  force_new_deployment   = true
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [aws_security_group.ecs_master_sg.id]
+    assign_public_ip = false
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.master_sd.arn
+  }
+
+  tags = local.default_tags
+
+  depends_on = [
+    aws_service_discovery_service.master_sd,
+    aws_ecs_task_definition.task-pest-master,
+    aws_iam_role_policy_attachment.attach_ecs_exec,
+    aws_iam_role_policy_attachment.attach_s3_write
+  ]
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+}
+
+#Esperar 2 minutos para asegurar que el master esté listo antes de iniciar los agentes
+resource "time_sleep" "wait_2_minutes" {
+  create_duration = "2m"
+  
+  triggers = {
+    agent_run_id = var.agent_run_id
+  }
 }
 
 # Ejecutar los agentes con run-task (one-shot). Cambiar `agent_run_id` fuerza una nueva ejecución.
@@ -589,7 +602,8 @@ resource "null_resource" "run_agent_once" {
   }
 
   depends_on = [
-    aws_ecs_task_definition.task-pest-talabre-agente,
+    time_sleep.wait_2_minutes,
+    aws_ecs_task_definition.task-pest-agente,
     aws_security_group.ecs_tasks_sg
   ]
 
@@ -599,7 +613,7 @@ resource "null_resource" "run_agent_once" {
 $path = [System.IO.Path]::Combine($env:TEMP, "agent_network.json")
 $json = '${jsonencode({awsvpcConfiguration = { subnets = var.private_subnet_ids, securityGroups = [aws_security_group.ecs_tasks_sg.id], assignPublicIp = "DISABLED" } })}'
 [System.IO.File]::WriteAllBytes($path, [System.Text.Encoding]::UTF8.GetBytes($json))
-aws ecs run-task --cluster ${aws_ecs_cluster.cluster-pest-talabre.name} --launch-type FARGATE --task-definition ${aws_ecs_task_definition.task-pest-talabre-agente.arn} --count ${var.agent_count} --enable-execute-command --network-configuration file://$path
+aws ecs run-task --region ${var.aws_region} --cluster ${aws_ecs_cluster.cluster-pest.name} --launch-type FARGATE --task-definition ${aws_ecs_task_definition.task-pest-agente.arn} --count ${var.agent_count} --enable-execute-command --network-configuration file://$path
 Remove-Item $path -Force
 EOT
   }

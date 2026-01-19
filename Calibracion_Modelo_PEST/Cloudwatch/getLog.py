@@ -2,7 +2,7 @@
 import argparse
 import boto3
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 
 def parse_iso(s):
@@ -16,6 +16,18 @@ def parse_iso(s):
             pass
     raise ValueError("Formato de fecha inválido. Usa YYYY-MM-DD o YYYY-MM-DDTHH:MM:SS")
 
+def clean_message(msg):
+    """Elimina caracteres no permitidos en Excel (caracteres de control)."""
+    if not msg:
+        return msg
+    # Eliminar caracteres de control excepto tab, newline, carriage return
+    import unicodedata
+    cleaned = "".join(
+        ch if unicodedata.category(ch)[0] != "C" or ch in ("\t", "\n", "\r")
+        else "" for ch in msg
+    )
+    return cleaned.strip()
+
 def fetch_events(client, log_group, start_ms=None, end_ms=None):
     paginator = client.get_paginator('filter_log_events')
     kwargs = {"logGroupName": log_group, "interleaved": True}
@@ -26,11 +38,11 @@ def fetch_events(client, log_group, start_ms=None, end_ms=None):
     for page in paginator.paginate(**kwargs):
         for ev in page.get("events", []):
             rows.append({
-                "timestamp": datetime.utcfromtimestamp(ev["timestamp"]/1000).isoformat() + "Z",
-                "ingestionTime": datetime.utcfromtimestamp(ev["ingestionTime"]/1000).isoformat() + "Z",
+                "timestamp": datetime.fromtimestamp(ev["timestamp"]/1000, tz=timezone.utc).isoformat().replace("+00:00", "Z"),
+                "ingestionTime": datetime.fromtimestamp(ev["ingestionTime"]/1000, tz=timezone.utc).isoformat().replace("+00:00", "Z"),
                 "logStreamName": ev.get("logStreamName"),
                 "eventId": ev.get("eventId"),
-                "message": ev.get("message")
+                "message": clean_message(ev.get("message"))
             })
     return rows
 
@@ -48,6 +60,7 @@ def main():
     end_ms = parse_iso(args.end) if args.end else None
 
     client = boto3.client("logs", region_name=args.region) if args.region else boto3.client("logs")
+    print(f"Descargando eventos del log group '{args.log_group}'...")
     rows = fetch_events(client, args.log_group, start_ms, end_ms)
 
     if not rows:

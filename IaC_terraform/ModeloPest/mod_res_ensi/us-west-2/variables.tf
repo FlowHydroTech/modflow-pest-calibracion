@@ -1,6 +1,6 @@
 #configurar región AWS
 variable "aws_region" {default = "us-west-2" }
-#configurar VPC y subnets de la región seleccionada (deben ser privadas para mayor seguridad)
+#configurar VPC y subnets de la región seleccionada (privadas para mayor seguridad)
 variable "vpc_id" { default = "vpc-0b08cba4a3d0cf109" }
 variable "private_subnet_ids" {  default = ["subnet-0168d7d8961145483", "subnet-00f3021ecee723128"] }
 variable "private_route_table_ids" { default     = ["rtb-056497eebdfc41b40"] }
@@ -9,6 +9,7 @@ variable "nombre_modelo_pest" { default = "mod_res_ensi.pst" }
 variable "ejecutable_autonomo" { default = "pest.exe" }
 variable "ejecutable_master" { default = "pest_hp.exe" }
 variable "ejecutable_agente" { default = "agent_hp.exe" }
+variable "nombre_jacobiano" { default = "mod_res_ensi.jco" }
 variable "pest_port" { default = 4004 }
 #nombre del proyecto para tags y nombres de recursos en AWS
 variable "project_name" { default = "mod-res-ensi" }
@@ -33,5 +34,5 @@ variable "master_run_id" {
 variable "agent_run_id" {
   description = "Identificador que fuerza la ejecución puntual de los agentes cuando cambia. Dejar vacío para no ejecutar."
   type        = string
-  default     = "agentes-001"
+  default     = "agente-001"
 }

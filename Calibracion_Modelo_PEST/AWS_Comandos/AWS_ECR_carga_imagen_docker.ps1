@@ -43,3 +43,8 @@ aws ecr create-repository --repository-name pest-mod-res-ensi --region us-west-2
 aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 312019940349.dkr.ecr.us-west-2.amazonaws.com
 docker tag pest-mod-res-ensi:latest 312019940349.dkr.ecr.us-west-2.amazonaws.com/pest-mod-res-ensi:latest
 docker push 312019940349.dkr.ecr.us-west-2.amazonaws.com/pest-mod-res-ensi:latest
+
+aws ecr create-repository --repository-name pest-mod-res-ensi --region us-east-2
+aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 312019940349.dkr.ecr.us-east-2.amazonaws.com
+docker tag pest-mod-res-ensi:latest 312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-mod-res-ensi:latest
+docker push 312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-mod-res-ensi:latest
