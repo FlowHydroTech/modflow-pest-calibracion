@@ -4,6 +4,10 @@ from datetime import datetime
 import hcl2
 import json
 
+
+# Parámetros configurables
+cantidad_nuevos_agentes = 1  # Número de agentes a activar
+
 #leer recursos desde el estado de terraform
 def read_terraform_state(state_file="terraform.tfstate"):
     """Lee el archivo tfstate y extrae recursos e IDs"""
@@ -49,10 +53,6 @@ def read_terraform_variables(file_path):
                     variables[var_name] = var_config["default"]
     
     return variables
-
-# Parámetros configurables
-cantidad_nuevos_agentes = 37  # Número de agentes a activar
-
 
 #leer variables de terraform
 tf_vars = read_terraform_variables('variables.tf')

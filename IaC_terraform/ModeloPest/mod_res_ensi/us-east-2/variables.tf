@@ -5,10 +5,12 @@ variable "vpc_id" { default = "vpc-0d15e6b1598fd08ef" }
 variable "private_subnet_ids" {  default = ["subnet-017a501a7e052200f", "subnet-0357178626be5cf43"] }
 variable "private_route_table_ids" { default     = ["rtb-04dee429f7aa02db0"] }
 #nombre del modelo PEST que se debe ejecutar pest_hp.exe <nombre_modelo_pest> /h :4004
-variable "nombre_modelo_pest" { default = "mod_res_ensi.pst" }
 variable "ejecutable_autonomo" { default = "pest.exe" }
 variable "ejecutable_master" { default = "pest_hp.exe" }
 variable "ejecutable_agente" { default = "agent_hp.exe" }
+variable "nombre_modelo_pest" { default = "mod_res_ensi.pst" }
+variable "comando_master" { default = "/h" }
+variable "comando_agente" { default = "/h" }
 variable "nombre_jacobiano" { default = "mod_res_ensi.jco" }
 variable "pest_port" { default = 4004 }
 #nombre del proyecto para tags y nombres de recursos en AWS

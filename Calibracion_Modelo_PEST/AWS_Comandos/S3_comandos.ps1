@@ -8,3 +8,4 @@ aws s3 cp /app/modelo s3://312019940349-pest-talabre/modelo --recursive
 aws s3 sync s3://312019940349-pest-talabre/modelo . --region us-west-2
 aws s3 sync s3://312019940349-pest-mod-res-ensi/modelo . --region us-east-1
 
+aws s3 sync s3://312019940349-pest-mod-res-ensi-west-2/modelo . --region us-west-2

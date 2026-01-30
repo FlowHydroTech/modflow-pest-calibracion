@@ -1,9 +1,9 @@
 #configurar región AWS
 variable "aws_region" {default = "us-west-2" }
 #configurar VPC y subnets de la región seleccionada (privadas para mayor seguridad)
-variable "vpc_id" { default = "vpc-0b08cba4a3d0cf109" }
-variable "private_subnet_ids" {  default = ["subnet-0168d7d8961145483", "subnet-00f3021ecee723128"] }
-variable "private_route_table_ids" { default     = ["rtb-056497eebdfc41b40"] }
+variable "vpc_id" { default = "vpc-xxxxxxx" } #VPC por defecto de la región seleccionada
+variable "private_subnet_ids" {  default = ["subnet-xxxxxxx", "subnet-xxxxxxx"] } #seleccione 2 subredes privadas en distintas zonas de disponibilidad
+variable "private_route_table_ids" { default     = ["rtb-xxxxx"] } #tabla de rutas asociada a las subredes privadas
 #nombre del modelo PEST que se debe ejecutar pest_hp.exe <nombre_modelo_pest> /h :4004
 variable "ejecutable_autonomo" { default = "pest.exe" }
 variable "ejecutable_master" { default = "pest_hp.exe" }

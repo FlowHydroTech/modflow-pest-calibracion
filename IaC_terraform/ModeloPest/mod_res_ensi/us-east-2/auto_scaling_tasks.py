@@ -10,11 +10,13 @@ import json
 find_logs = ["Running model", "Calculating Jacobian matrix", "Parallelisation of lambda search"]
 find_model_start = "Running model"
 find_model_end = "Model run complete"
-agent_count_max = 998   #máximo número de agentes permitidos en la region us-west-2 de AWS. 1000 vcpu (2 master + 998 agentes) Fargate.
-minutes_wait_between_checks = 6     # minutos entre cada verificación de logs cuando se requiere ajuste de agentes, se recomienda 5 o más minutos
+agent_count_max = 1498   #máximo número de agentes permitidos en la region us-east-2 de AWS. 1500 vcpu (2 master + 1498 agentes) Fargate.
+minutes_wait_between_checks = 2     # Se reduce el tiempo de espera debido a que se agrega un tiempo de espera para permitir que el master libere agentes apagados.
                                     # por el tiempo de uptime de agentes, agentes sin log son apagados automáticamente por este script.
-minutes_wait_between_checks_without_change = 2  # minutos entre cada verificación de logs cuando no requiere aumento de agentes.
+minutes_wait_between_checks_without_change = 3  # minutos entre cada verificación de logs cuando no requiere aumento de agentes.
 date_filter = None      #fecha del último log del master, None para que tome la primera encontrada.
+agent_count = None
+id_task_master = None      #fecha del último log del master, None para que tome la primera encontrada.
 
 #extraer variables de terraform
 def read_terraform_variables(file_path):
@@ -81,14 +83,14 @@ def extract_model_count(message):
         return int(match.group(1))
     return None
 
-def get_log_streams_by_prefix(log_group, prefix, region="us-west-2"):
+def get_log_streams_by_prefix(log_group, prefix, region="us-east-2"):
     """
     Obtiene el log stream más reciente de un log group que comienza con un prefijo específico.
     
     Args:
-        log_group: Nombre del log group (/ecs/mod-res-ensi-us-west-2-master)
+        log_group: Nombre del log group (/ecs/mod-res-ensi-us-east-2-master)
         prefix: Prefijo del log stream (ecs/mod-res-ensi-master)
-        region: Región AWS (default: us-west-2)
+        region: Región AWS (default: us-east-2)
     
     Returns:
         Diccionario con el log stream que tiene el lastEventTimestamp más reciente, o None
@@ -142,15 +144,15 @@ def get_log_streams_by_prefix(log_group, prefix, region="us-west-2"):
         print(f"✗ Error al obtener log streams: {e}")
         return None
 
-def get_latest_log_event(log_group, log_stream_name, keywords, region="us-west-2"):
+def get_latest_log_event(log_group, log_stream_name, keywords, region="us-east-2"):
     """
     Obtiene el último evento de log que contiene alguno de los keywords especificados.
     
     Args:
-        log_group: Nombre del log group (/ecs/mod-res-ensi-us-west-2-master)
+        log_group: Nombre del log group (/ecs/mod-res-ensi-us-east-2-master)
         log_stream_name: Nombre del log stream
         keywords: Lista de strings para buscar (ej: ["Running model", "Calculating Jacobian matrix", "Parallelisation of lambda search"])
-        region: Región AWS (default: us-west-2)
+        region: Región AWS (default: us-east-2)
     
     Returns:
         Diccionario con el último evento encontrado, o None
@@ -209,7 +211,7 @@ def get_latest_log_event(log_group, log_stream_name, keywords, region="us-west-2
         print(f"✗ Error al obtener eventos de log: {e}")
         return None
 
-def get_all_ecs_tasks(cluster_name, family, desired_status="RUNNING", region="us-west-2"):
+def get_all_ecs_tasks(cluster_name, family, desired_status="RUNNING", region="us-east-2"):
     """
     Obtiene todas las tareas ECS de un clúster y familia específicos.
     
@@ -217,7 +219,7 @@ def get_all_ecs_tasks(cluster_name, family, desired_status="RUNNING", region="us
         cluster_name: Nombre del clúster ECS
         family: Familia de tareas ECS
         desired_status: Estado deseado de las tareas (default: "RUNNING")
-        region: Región AWS (default: us-west-2)
+        region: Región AWS (default: us-east-2)
     """
     ecs = boto3.client("ecs", region_name=region)
     task_arns = []
@@ -254,7 +256,7 @@ def clean_message(msg):
     return cleaned.strip()
 
 #recuperar logs de cloudwatch
-def fetch_events(log_group, start_ms=None, end_ms=None, region="us-west-2"):
+def fetch_events(log_group, start_ms=None, end_ms=None, region="us-east-2"):
     client = boto3.client("logs", region_name=region)
     paginator = client.get_paginator('filter_log_events')
     kwargs = {"logGroupName": log_group, "interleaved": True}
@@ -276,7 +278,7 @@ def fetch_events(log_group, start_ms=None, end_ms=None, region="us-west-2"):
     return rows
 
 # Función para eliminar una tarea específica
-def stop_task(task_arn, region="us-west-2", cluster_name=None):
+def stop_task(task_arn, region="us-east-2", cluster_name=None):
     """
     Detiene (elimina) una tarea del cluster
     
@@ -307,7 +309,7 @@ def parse_iso(s):
             pass
     raise ValueError("Formato de fecha inválido. Usa YYYY-MM-DD o YYYY-MM-DDTHH:MM:SS")
 
-def start_task(count_agents, cluster_name, task_definition, subnets_id, security_group_id, launch_type="FARGATE", region="us-west-2"):
+def start_task(count_agents, cluster_name, task_definition, subnets_id, security_group_id, launch_type="FARGATE", region="us-east-2"):
     # Crear cliente ECS
     ecs_client = boto3.client('ecs', region_name=region)
     batch_size = 10  # Lanzar 10 tareas a la vez
@@ -367,10 +369,11 @@ if __name__ == "__main__":
     # automatizar el aumento y disminución de agentes según logs.
     while True:
         print("\n=== Verificando necesidad de ajuste de agentes ECS ===\n")
+        print(f"Timestamp actual: {datetime.now().strftime('%Y%m%d %H:%M:%S')}\n")
         minutes_sleep = minutes_wait_between_checks_without_change
         #recuperar variables de terraform
         tf_vars = read_terraform_variables('variables.tf')
-        region = tf_vars.get('aws_region', "us-west-2")
+        region = tf_vars.get('aws_region', "us-east-2")
         private_subnet_ids = tf_vars.get('private_subnet_ids')
         project_name = tf_vars.get('project_name')
         #recuperar recursos desde el estado de terraform
@@ -395,6 +398,12 @@ if __name__ == "__main__":
 
         # 2. Obtener el último evento con los keywords
         if max_stream:
+            if not id_task_master:
+                id_task_master = max_stream["logStreamName"].split('/')[-1]
+            else:
+                if id_task_master != max_stream["logStreamName"].split('/')[-1]:
+                    print(f"⚠ Cambio detectado en el log stream del master: {id_task_master} → {max_stream['logStreamName'].split('/')[-1]}. Se detiene el proceso de autoescalado.")
+                    exit()
             keywords = find_logs
             latest_event = get_latest_log_event(
                 log_group=log_group_master,
@@ -404,12 +413,15 @@ if __name__ == "__main__":
             )
         
         if latest_event:
-            agent_count = int(extract_model_count(latest_event['message']))  # cantidad de agentes requeridos segun log master.
+            agent_count_new = int(extract_model_count(latest_event['message']))  # cantidad de agentes requeridos segun log master.
             date_filter_new = latest_event['timestamp']
             if not date_filter:
                 date_filter = date_filter_new
+            if not agent_count:
+                agent_count = agent_count_new
             #print(f"fecha: {date_filter}, type: {type(date_filter)}")
-            print(f"Agentes necesarios según log master:{agent_count} con fecha de log: {date_filter}")
+            print(f"Agentes necesarios según log master:{agent_count} con fecha de log: {date_filter} anterior")
+            print(f"Agentes necesarios según log master:{agent_count_new} con fecha de log: {date_filter_new}")
 
             # recuperar tareas de agente del cluster
             ecs_list_agents_running = get_all_ecs_tasks(cluster_name, task_family_agent, desired_status="RUNNING", region=region)
@@ -449,18 +461,24 @@ if __name__ == "__main__":
                 #verificar si cambió la necesidad de agentes
                 print(f"date_filter_new: {date_filter_new}. date_filter: {date_filter}")
                 #print(f"agent_count: {agent_count}. agent_count: {agent_count}")
-                if date_filter_new != date_filter:
+                if date_filter_new > date_filter:
                     #si cambió, actualizar el valor
                     date_filter = date_filter_new
 
                     #validar si es necesario aumentar o disminuir agentes
-                    if agents_running < agent_count:
-                        print(f"Se requieren más agentes. Actualmente hay {agents_running} agentes, se necesitan {agent_count} agentes.")
+                    if agents_running < agent_count_new:
+                        print(f"Se requieren más agentes. Actualmente hay {agents_running} agentes, se necesitan {agent_count_new} agentes.")
+                        segundos_espera = (agent_count - agents_running)*2
+                        print(f"Generar un tiempo de espera según la cantidad de agentes usados previamente {agent_count} menos los activos {agents_running} esperar {segundos_espera} segundos...")
+                        if segundos_espera > 0:
+                            time.sleep(segundos_espera)
+                        #Actualizar agent_count
+                        agent_count = agent_count_new
                         #aumentar agentes
-                        tasks_to_start = agent_count - agents_running
+                        tasks_to_start = agent_count_new - agents_running
                         if tasks_to_start + agents_running > agent_count_max:
-                            tasks_to_start = agent_count - agents_running
-                            print(f"⚠ Se alcanzó el máximo número de agentes permitidos en la región ({agent_count}). Solo se iniciarán {tasks_to_start} agentes adicionales.")
+                            tasks_to_start = agent_count_max - agents_running
+                            print(f"⚠ Se alcanzó el máximo número de agentes permitidos en la región ({agent_count_max}). Solo se iniciarán {tasks_to_start} agentes adicionales.")
                         print(f"Iniciando {tasks_to_start} tareas de agente adicionales...")
 
                         start_task(
@@ -489,9 +507,9 @@ if __name__ == "__main__":
             else:
                 print("⚠ No se encontraron logs nuevos en los agentes desde la fecha del último log del master.")
                 #crear cantidad de agentes según log del master.
-                print (f"Creando {agent_count} agentes según log del master...")
+                print (f"Creando {agent_count_new} agentes según log del master...")
                 start_task(
-                            count_agents=agent_count,
+                            count_agents=agent_count_new,
                             cluster_name=cluster_name,
                             task_definition=task_family_agent,
                             subnets_id=private_subnet_ids,  
@@ -501,5 +519,6 @@ if __name__ == "__main__":
                         )
         else:
             print("⚠ No se pudo obtener el último evento del log master. No se realizarán ajustes.")
-        print(f"=== Esperando {minutes_sleep} minutos para la siguiente verificación... ===\n")
-        time.sleep(minutes_sleep*60)  # Esperar 5 minutos antes de la siguiente verificación
+        print(f"Timestamp actual: {datetime.now().strftime('%Y%m%d %H:%M:%S')}\n")
+        print(f"=== Esperando {minutes_sleep} minutos para la siguiente verificación... ===")
+        time.sleep(minutes_sleep*60) 

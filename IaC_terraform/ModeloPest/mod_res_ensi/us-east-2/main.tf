@@ -201,6 +201,36 @@ resource "aws_security_group_rule" "allow_tasks_to_master" {
   source_security_group_id = aws_security_group.ecs_tasks_sg.id
 }
 
+# Permitir ICMP (ping) entre agentes y master
+resource "aws_security_group_rule" "allow_icmp_tasks_to_master" {
+  type                     = "ingress"
+  from_port                = -1
+  to_port                  = -1
+  protocol                 = "icmp"
+  security_group_id        = aws_security_group.ecs_master_sg.id
+  source_security_group_id = aws_security_group.ecs_tasks_sg.id
+}
+
+# Permitir ICMP entre agentes (self)
+resource "aws_security_group_rule" "allow_icmp_tasks_self" {
+  type                     = "ingress"
+  from_port                = -1
+  to_port                  = -1
+  protocol                 = "icmp"
+  security_group_id        = aws_security_group.ecs_tasks_sg.id
+  source_security_group_id = aws_security_group.ecs_tasks_sg.id
+}
+
+# Permitir ICMP en el master (self)
+resource "aws_security_group_rule" "allow_icmp_master_self" {
+  type                     = "ingress"
+  from_port                = -1
+  to_port                  = -1
+  protocol                 = "icmp"
+  security_group_id        = aws_security_group.ecs_master_sg.id
+  source_security_group_id = aws_security_group.ecs_master_sg.id
+}
+
 # Security group for VPC interface endpoints (ECR / STS / Logs)
 resource "aws_security_group" "vpc_endpoints_sg" {
   name                   = "${var.project_name}-endpoints-sg-${var.aws_region}"
@@ -457,6 +487,7 @@ resource "aws_ecs_task_definition" "task-pest-master" {
       { name = "BUCKET_NAME", value = var.s3_bucket },
       { name = "EJECUTABLE_MASTER", value = var.ejecutable_master },
       { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
+      { name = "COMANDO_MASTER", value = var.comando_master },
       { name = "PEST_PORT", value = tostring(var.pest_port) },
       { name = "PROJECT_NAME", value = var.project_name },
       { name = "AWS_REGION", value = var.aws_region },
@@ -487,10 +518,6 @@ resource "aws_ecs_task_definition" "task-pest-agente" {
   task_role_arn            = aws_iam_role.task_role.arn
   tags                     = local.default_tags
 
-  ephemeral_storage {
-    size_in_gib = 30    #ajuste considerando tamaño de la imagen y archivos generados por el modelo en el master
-  }
-
   container_definitions = jsonencode([{
     name      = "${var.project_name}-agente"
     image     = var.ecr_image
@@ -499,11 +526,15 @@ resource "aws_ecs_task_definition" "task-pest-agente" {
     environment = [
         { name = "NOMBRE_MODELO_PEST", value = var.nombre_modelo_pest },
         { name = "EJECUTABLE_AGENTE", value = var.ejecutable_agente },
+        { name = "COMANDO_AGENTE", value = var.comando_agente },
         { name = "MASTER_HOST", value = "master.${var.project_name}.local" },
         { name = "PEST_PORT", value = tostring(var.pest_port) },
         { name = "BUCKET_NAME", value = var.s3_bucket },
         { name = "PROJECT_NAME", value = var.project_name },
-        { name = "AWS_REGION", value = var.aws_region }
+        { name = "AWS_REGION", value = var.aws_region },
+        { name = "WINEARCH", value = "win64" },
+        { name = "WINEPREFIX", value = "/root/.wine" },
+        { name = "DISPLAY", value = ":0" }
         ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -515,6 +546,7 @@ resource "aws_ecs_task_definition" "task-pest-agente" {
     }
   }])
 }
+
 
 # Task definition para el agente-stop
 # resource "aws_ecs_task_definition" "task-pest-agente-stop" {
@@ -586,9 +618,9 @@ resource "aws_ecs_service" "master_service" {
   }
 }
 
-#Esperar 2 minutos para asegurar que el master esté listo antes de iniciar los agentes
-resource "time_sleep" "wait_2_minutes" {
-  create_duration = "1m"
+#Esperar 4 minutos para asegurar que el master esté listo antes de iniciar los agentes
+resource "time_sleep" "wait_4_minutes" {
+  create_duration = "4m"
   
   triggers = {
     agent_run_id = var.agent_run_id
