@@ -635,7 +635,7 @@ resource "null_resource" "run_agent_once" {
   }
 
   depends_on = [
-    time_sleep.wait_2_minutes,
+    time_sleep.wait_4_minutes,
     aws_ecs_task_definition.task-pest-agente,
     aws_security_group.ecs_tasks_sg
   ]

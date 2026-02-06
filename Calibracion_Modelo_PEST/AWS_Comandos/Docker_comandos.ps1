@@ -1,5 +1,5 @@
 # Construir la imagen Docker usando el Dockerfile en el directorio actual
-docker build -t pest-mod-res-ensi .
+docker build -t pest-test .
 
 
 

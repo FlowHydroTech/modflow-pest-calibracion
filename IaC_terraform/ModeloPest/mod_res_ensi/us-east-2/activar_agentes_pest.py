@@ -6,7 +6,7 @@ import json
 
 
 # Parámetros configurables
-cantidad_nuevos_agentes = 1  # Número de agentes a activar
+cantidad_nuevos_agentes = 33  # Número de agentes a activar
 
 #leer recursos desde el estado de terraform
 def read_terraform_state(state_file="terraform.tfstate"):

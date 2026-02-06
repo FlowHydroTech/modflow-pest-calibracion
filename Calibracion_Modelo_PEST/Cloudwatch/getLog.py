@@ -71,7 +71,13 @@ def main():
     df = df.sort_values("timestamp")
     
     if args.format == "excel":
-        df.to_excel(args.output, index=False, engine="openpyxl")
+        try:
+            df.to_excel(args.output, index=False, engine="openpyxl")
+        except:
+            
+            print("Error: Para exportar a Excel, demasiadas filas para el formato Excel. Se genera descarga en formato CSV.", file=sys.stderr)
+            df.to_csv(args.output.rsplit('.', 1)[0] + ".csv", index=False, encoding="utf-8")
+            return
     else:
         df.to_csv(args.output, index=False, encoding="utf-8")
     

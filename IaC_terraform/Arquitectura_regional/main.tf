@@ -322,7 +322,7 @@ resource "aws_security_group_rule" "tasks_egress_all" {
 
 resource "aws_vpc_endpoint" "ecr_api" {
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.ecr.api"
+  service_name      = "com.amazonaws.${var.project_name}-${var.aws_region}.ecr.api"
   vpc_endpoint_type = "Interface"
   subnet_ids        = var.private_subnet_ids
   security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
@@ -332,7 +332,7 @@ resource "aws_vpc_endpoint" "ecr_api" {
 
 resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.ecr.dkr"
+  service_name      = "com.amazonaws.${var.project_name}-${var.aws_region}.ecr.dkr"
   vpc_endpoint_type = "Interface"
   subnet_ids        = var.private_subnet_ids
   security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
@@ -342,7 +342,7 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
 
 resource "aws_vpc_endpoint" "sts" {
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.sts"
+  service_name      = "com.amazonaws.${var.project_name}${var.aws_region}.sts"
   vpc_endpoint_type = "Interface"
   subnet_ids        = var.private_subnet_ids
   security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
@@ -352,7 +352,7 @@ resource "aws_vpc_endpoint" "sts" {
 
 resource "aws_vpc_endpoint" "logs" {
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.logs"
+  service_name      = "com.amazonaws.${var.project_name}-${var.aws_region}.logs"
   vpc_endpoint_type = "Interface"
   subnet_ids        = var.private_subnet_ids
   security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
@@ -363,7 +363,7 @@ resource "aws_vpc_endpoint" "logs" {
 # VPC Endpoints para ECS Exec (SSM)
 resource "aws_vpc_endpoint" "ssm" {
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.ssm"
+  service_name      = "com.amazonaws.${var.project_name}-${var.aws_region}.ssm"
   vpc_endpoint_type = "Interface"
   subnet_ids        = var.private_subnet_ids
   security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
@@ -373,7 +373,7 @@ resource "aws_vpc_endpoint" "ssm" {
 
 resource "aws_vpc_endpoint" "ssmmessages" {
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.ssmmessages"
+  service_name      = "com.amazonaws.${var.project_name}-${var.aws_region}.ssmmessages"
   vpc_endpoint_type = "Interface"
   subnet_ids        = var.private_subnet_ids
   security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
@@ -383,7 +383,7 @@ resource "aws_vpc_endpoint" "ssmmessages" {
 
 resource "aws_vpc_endpoint" "ec2messages" {
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.ec2messages"
+  service_name      = "com.amazonaws.${var.project_name}-${var.aws_region}.ec2messages"
   vpc_endpoint_type = "Interface"
   subnet_ids        = var.private_subnet_ids
   security_group_ids = [aws_security_group.vpc_endpoints_sg.id]
@@ -394,7 +394,7 @@ resource "aws_vpc_endpoint" "ec2messages" {
 resource "aws_vpc_endpoint" "s3" {
   count             = length(var.private_route_table_ids) > 0 ? 1 : 0
   vpc_id            = var.vpc_id
-  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  service_name      = "com.amazonaws.${var.project_name}-${var.aws_region}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = var.private_route_table_ids
   tags = local.default_tags
