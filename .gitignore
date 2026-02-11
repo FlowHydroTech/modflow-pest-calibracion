@@ -216,4 +216,4 @@ data/
 # Terraform state and provider directories
 .terraform/
 *terraform.*
-**/.terraform/
+**/.terraform/.DS_Store
