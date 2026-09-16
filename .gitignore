@@ -208,7 +208,10 @@ __marimo__/
 
 #data files, modelos, etc
 data/
-**/app/modelo/**
+**/modelo/**
+**/USGT_V_2-7-0_Source_Code/**
+**/unixpest_hp/**
+**log_launch_master_agents**
 *.xlsx
 *.csv
 **/log/**

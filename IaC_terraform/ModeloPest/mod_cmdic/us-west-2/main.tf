@@ -475,7 +475,7 @@ resource "aws_ecs_task_definition" "task-pest-master" {
   tags                     = local.default_tags
 
   ephemeral_storage {
-    size_in_gib = 30    #ajuste considerando tamaño de la imagen y archivos generados por el modelo en el master
+    size_in_gib = var.master_size_disco_gb    #ajuste considerando tamaño de la imagen y archivos generados por el modelo en el master
   }
 
   container_definitions = jsonencode([{
@@ -517,6 +517,10 @@ resource "aws_ecs_task_definition" "task-pest-agente" {
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
   task_role_arn            = aws_iam_role.task_role.arn
   tags                     = local.default_tags
+
+  ephemeral_storage {
+    size_in_gib = var.agente_size_disco_gb    #ajuste considerando tamaño de la imagen y archivos generados por el modelo en el agente
+  }
 
   container_definitions = jsonencode([{
     name      = "${var.project_name}-agente"

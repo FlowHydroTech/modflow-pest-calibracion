@@ -48,3 +48,38 @@ aws ecr create-repository --repository-name pest-mod-res-ensi --region us-east-2
 aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 312019940349.dkr.ecr.us-east-2.amazonaws.com
 docker tag pest-mod-res-ensi:latest 312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-mod-res-ensi:latest
 docker push 312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-mod-res-ensi:latest
+
+aws ecr create-repository --repository-name mod-cmidc --region us-west-2
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 312019940349.dkr.ecr.us-west-2.amazonaws.com
+docker tag mod-cmidc:latest 312019940349.dkr.ecr.us-west-2.amazonaws.com/mod-cmidc:latest
+docker push 312019940349.dkr.ecr.us-west-2.amazonaws.com/mod-cmidc:latest
+
+
+
+# crear repositorio agente oregon
+aws ecr create-repository --repository-name pest-cmdic-rajos-linux --region us-west-2
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 312019940349.dkr.ecr.us-west-2.amazonaws.com
+docker tag pest-cmdic-rajos-linux:latest 312019940349.dkr.ecr.us-west-2.amazonaws.com/pest-cmdic-rajos-linux:latest
+docker push 312019940349.dkr.ecr.us-west-2.amazonaws.com/pest-cmdic-rajos-linux:latest
+
+
+
+# crear repositorio agente ohio
+aws ecr create-repository --repository-name pest-cmdic-rajos-linux --region us-east-2
+aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 312019940349.dkr.ecr.us-east-2.amazonaws.com
+docker tag pest-cmdic-rajos-linux:latest 312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-cmdic-rajos-linux:latest
+docker push 312019940349.dkr.ecr.us-east-2.amazonaws.com/pest-cmdic-rajos-linux:latest
+
+
+# crear repositorio agente oregon
+aws ecr create-repository --repository-name pest-cmdic-linux-ensi --region us-west-2
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 312019940349.dkr.ecr.us-west-2.amazonaws.com
+docker tag pest-cmdic-linux-ensi:latest 312019940349.dkr.ecr.us-west-2.amazonaws.com/pest-cmdic-linux-ensi:latest
+docker push 312019940349.dkr.ecr.us-west-2.amazonaws.com/pest-cmdic-linux-ensi:latest
+
+
+# crear repositorio agente virginia
+aws ecr create-repository --repository-name pest-talabre-linux --region us-east-1
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 312019940349.dkr.ecr.us-east-1.amazonaws.com
+docker tag pest-talabre-linux:latest 312019940349.dkr.ecr.us-east-1.amazonaws.com/pest-talabre-linux:latest
+docker push 312019940349.dkr.ecr.us-east-1.amazonaws.com/pest-talabre-linux:latest

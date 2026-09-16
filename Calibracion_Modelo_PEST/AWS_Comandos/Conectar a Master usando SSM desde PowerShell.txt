@@ -1,0 +1,70 @@
+aws ecs execute-command `
+--region us-west-2 `
+--cluster pest-cmdic-linux-ensi-master-ce_Batch_61239d71-c5c6-39df-8c75-f83773689deb `
+--task 55b80eae766f4891a83c5d97dccc2846 `
+--container default `
+--interactive `
+--command "/bin/bash"
+
+aws s3 cp /app/modelo s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_master_55b80eae766f4891a83c5d97dccc2846 --recursive
+
+
+aws ssm start-session `
+  --region us-west-2 `
+  --target i-0ec6df3d39b73cc7a
+  
+  aws ec2 modify-subnet-attribute --subnet-id subnet-0ee3049163ee70c2b --no-map-public-ip-on-launch
+docker exec -it 70ada00584e0 bash
+
+aws s3 cp /app/modelo s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_master_20260820_1244 --recursive
+
+aws s3 sync s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_master_55b80eae766f4891a83c5d97dccc2846 . --region us-west-2
+aws s3 sync s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_agente2_98fb1e3c43144093b9a8ec98fb3ca580 . --region us-west-2
+aws s3 sync s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_agente11_75789212568140f697c7438940393e0e . --region us-west-2
+aws s3 sync s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_agente_20260820_1200 . --region us-west-2
+
+aws s3 sync s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_master_20260831_0900 . --region us-west-2
+
+####################################### conectar a master TALABRE en us-east-1 ####################################################################
+aws ecs execute-command `
+  --region us-east-1 `
+  --cluster pest-talabre-linux-master-ce_Batch_3facf73a-9166-3984-9fc8-ca07536cb8e5 `
+  --task c49ab6ff7b7942288a8d82a43c030de3 `
+  --container default `
+  --interactive `
+  --command "/bin/bash"
+#RESPALDAR MODELO A BUCKET
+aws s3 cp /app/modelo s3://312019940349-pest-talabre-east-1/modelo_master_20260913_1426 --recursive
+#DESCAERGAR DESDE BUCKET A DISCO LOCAL.
+aws s3 sync s3://312019940349-pest-talabre-east-1/modelo_master_20260913_1426 . --region us-east-1
+  
+#######################################conectar a master CMDIC en us-west-2####################################################################
+aws ecs execute-command `
+  --region us-west-2 `
+  --cluster pest-cmdic-linux-ensi-master-ce_Batch_61239d71-c5c6-39df-8c75-f83773689deb `
+  --task 31ab483a75544540b3cf57eab5fbe9c7 `
+  --container default `
+  --interactive `
+  --command "/bin/bash"
+  
+aws s3 cp /app/modelo s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_master_20260913_1350 --recursive
+
+aws s3 sync s3://312019940349-pest-cmdic-linux-ensi-west-2/modelo_master_20260913_1350 . --region us-west-2
+
+aws ecs execute-command `
+--region us-west-2 `
+--cluster pest-cmdic-linux-ensi-master-ce_Batch_61239d71-c5c6-39df-8c75-f83773689deb `
+--task ecb1017bc3024cb196bbc79aeb5e0754 `
+--container default `
+--interactive `
+--command "/bin/bash"
+
+
+cmdic_rajos_ensi.rei
+cmdic_rajos_ensi.rls
+cmdic_rajos_ensi.rme
+cmdic_rajos_ensi.rmr
+cmdic_rajos_ensi.rst
+cmdic_rajos_ensi.sen 
+
+aws s3 cp /app/modelo/cmdic_rajos_ensi.sen s3://312019940349-pest-cmdic-linux-ensi-west-2/cmdic_rajos_ensi.sen

@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="Infraestrucutra Regional Final" id="H2GDd47HScZemytZujFP">
-        <mxGraphModel dx="1085" dy="1624" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="786" dy="1674" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="TWpnXHbJ1FfW_LTOKmbr-0"/>
                 <mxCell id="TWpnXHbJ1FfW_LTOKmbr-1" parent="TWpnXHbJ1FfW_LTOKmbr-0"/>
@@ -143,7 +143,7 @@
                 <mxCell id="MXzg3NGYf9iTqHCQe2gr-20" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="TWpnXHbJ1FfW_LTOKmbr-1" source="MXzg3NGYf9iTqHCQe2gr-13" target="TWpnXHbJ1FfW_LTOKmbr-10" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="MXzg3NGYf9iTqHCQe2gr-11" value="Contenedor del Modelo" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;shape=mxgraph.aws3.ec2_compute_container;fillColor=#F58534;gradientColor=none;" parent="TWpnXHbJ1FfW_LTOKmbr-1" vertex="1">
+                <mxCell id="MXzg3NGYf9iTqHCQe2gr-11" value="Contenedor del Modelo" style="outlineConnect=0;dashed=0;verticalLabelPosition=top;verticalAlign=bottom;align=center;html=1;shape=mxgraph.aws3.ec2_compute_container;fillColor=#F58534;gradientColor=none;labelPosition=center;" parent="TWpnXHbJ1FfW_LTOKmbr-1" vertex="1">
                     <mxGeometry x="420" y="-940" width="60" height="34.5" as="geometry"/>
                 </mxCell>
                 <mxCell id="MXzg3NGYf9iTqHCQe2gr-12" value="" style="edgeStyle=none;html=1;" parent="TWpnXHbJ1FfW_LTOKmbr-1" source="MXzg3NGYf9iTqHCQe2gr-15" target="MXzg3NGYf9iTqHCQe2gr-13" edge="1">
@@ -240,7 +240,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="hxbb2fBvjmpB4PWd50yl" name="Calibración PEST">
-        <mxGraphModel dx="1085" dy="218" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="830" dy="528" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -319,7 +319,7 @@
         </mxGraphModel>
     </diagram>
     <diagram name="Auto escalado" id="ycmnGNyYG-7BNEpP3BQE">
-        <mxGraphModel dx="1088" dy="638" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="830" dy="528" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="Zw_Xb8TPOHbmyL1CPAe8-0"/>
                 <mxCell id="Zw_Xb8TPOHbmyL1CPAe8-1" parent="Zw_Xb8TPOHbmyL1CPAe8-0"/>
@@ -406,7 +406,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="phFWly5wgVAaovYptbyf" name="Opción 2 multiregion">
-        <mxGraphModel dx="1088" dy="638" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="830" dy="528" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -417,7 +417,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="EFH3U-fZjE4AhN5gYENW" name="Proceso Calibración PEST">
-        <mxGraphModel dx="1088" dy="638" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="830" dy="528" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -501,32 +501,32 @@
         </mxGraphModel>
     </diagram>
     <diagram id="vVMcjI2KQkbCDTou224g" name="Pipeline Calibración PEST">
-        <mxGraphModel dx="1088" dy="638" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0" adaptiveColors="none">
+        <mxGraphModel dx="976" dy="621" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0" adaptiveColors="none">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="B6q9Xvf63s_1jQXH-m97-8" value="Pipeline Calibración PEST con AWS" style="swimlane;childLayout=stackLayout;resizeParent=1;resizeParentMax=0;startSize=20;html=1;" vertex="1" parent="1">
+                <mxCell id="B6q9Xvf63s_1jQXH-m97-8" value="Pipeline Calibración PEST con AWS" style="swimlane;childLayout=stackLayout;resizeParent=1;resizeParentMax=0;startSize=20;html=1;" parent="1" vertex="1">
                     <mxGeometry width="800" height="760" as="geometry"/>
                 </mxCell>
-                <mxCell id="B6q9Xvf63s_1jQXH-m97-9" value="Usuario Modelador" style="swimlane;startSize=20;html=1;" vertex="1" parent="B6q9Xvf63s_1jQXH-m97-8">
+                <mxCell id="B6q9Xvf63s_1jQXH-m97-9" value="Usuario Modelador" style="swimlane;startSize=20;html=1;" parent="B6q9Xvf63s_1jQXH-m97-8" vertex="1">
                     <mxGeometry y="20" width="400" height="740" as="geometry"/>
                 </mxCell>
-                <mxCell id="B6q9Xvf63s_1jQXH-m97-14" value="" style="edgeStyle=none;html=1;" edge="1" parent="B6q9Xvf63s_1jQXH-m97-9" source="B6q9Xvf63s_1jQXH-m97-12" target="B6q9Xvf63s_1jQXH-m97-13">
+                <mxCell id="B6q9Xvf63s_1jQXH-m97-14" value="" style="edgeStyle=none;html=1;" parent="B6q9Xvf63s_1jQXH-m97-9" source="B6q9Xvf63s_1jQXH-m97-12" target="B6q9Xvf63s_1jQXH-m97-13" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="B6q9Xvf63s_1jQXH-m97-12" value="Inicio" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="B6q9Xvf63s_1jQXH-m97-9">
+                <mxCell id="B6q9Xvf63s_1jQXH-m97-12" value="Inicio" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="B6q9Xvf63s_1jQXH-m97-9" vertex="1">
                     <mxGeometry x="180" y="30" width="40" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="B6q9Xvf63s_1jQXH-m97-13" value="Generar Modelo de Calibración" style="whiteSpace=wrap;html=1;" vertex="1" parent="B6q9Xvf63s_1jQXH-m97-9">
+                <mxCell id="B6q9Xvf63s_1jQXH-m97-13" value="Generar Modelo de Calibración" style="whiteSpace=wrap;html=1;" parent="B6q9Xvf63s_1jQXH-m97-9" vertex="1">
                     <mxGeometry x="140" y="90" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="B6q9Xvf63s_1jQXH-m97-16" value="" style="edgeStyle=none;html=1;" edge="1" parent="B6q9Xvf63s_1jQXH-m97-9" source="B6q9Xvf63s_1jQXH-m97-15" target="B6q9Xvf63s_1jQXH-m97-13">
+                <mxCell id="B6q9Xvf63s_1jQXH-m97-16" value="" style="edgeStyle=none;html=1;" parent="B6q9Xvf63s_1jQXH-m97-9" source="B6q9Xvf63s_1jQXH-m97-15" target="B6q9Xvf63s_1jQXH-m97-13" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="B6q9Xvf63s_1jQXH-m97-15" value="Modelo + Parámetros + Script" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="B6q9Xvf63s_1jQXH-m97-9">
+                <mxCell id="B6q9Xvf63s_1jQXH-m97-15" value="Modelo + Parámetros + Script" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" parent="B6q9Xvf63s_1jQXH-m97-9" vertex="1">
                     <mxGeometry x="10" y="90" width="80" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="B6q9Xvf63s_1jQXH-m97-10" value="Ingeniero de Datos" style="swimlane;startSize=20;html=1;" vertex="1" parent="B6q9Xvf63s_1jQXH-m97-8">
+                <mxCell id="B6q9Xvf63s_1jQXH-m97-10" value="Ingeniero de Datos" style="swimlane;startSize=20;html=1;" parent="B6q9Xvf63s_1jQXH-m97-8" vertex="1">
                     <mxGeometry x="400" y="20" width="400" height="740" as="geometry"/>
                 </mxCell>
             </root>

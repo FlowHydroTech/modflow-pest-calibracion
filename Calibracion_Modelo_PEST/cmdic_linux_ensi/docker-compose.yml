@@ -1,0 +1,21 @@
+services:
+  autonomo:
+    image: pest-cmdic-rajos-linux
+    container_name: autonomo-linux-compile
+    entrypoint: ["/bin/bash", "/app/entrypoint_autonomo.sh"]
+    environment:
+      - MASTER_HOST=master
+      - NOMBRE_MODELO_PEST=${NOMBRE_MODELO_PEST:-CMDIC_Rajos.pst}
+      - NOMBRE_MODELO=${NOMBRE_MODELO:-CMDIC_Rajos}
+      - EJECUTABLE_AUTONOMO=${EJECUTABLE_AUTONOMO:-./pest}
+      - PEST_PORT=${PEST_PORT:-4004}
+      - ID_PARAMETRO=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./app/resultados:/app/resultados
+    networks:
+      - mi_red
+
+networks:
+  mi_red:
+    driver: bridge
