@@ -1,0 +1,5 @@
+boto3>=1.34
+pandas>=2.0
+python-hcl2>=4.0
+pyyaml>=6.0
+openpyxl>=3.1
