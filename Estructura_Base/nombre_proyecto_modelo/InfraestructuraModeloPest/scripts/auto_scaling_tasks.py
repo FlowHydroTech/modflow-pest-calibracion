@@ -1,12 +1,12 @@
-import os
 import sys
 import pandas as pd
 import boto3
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import re
 import hcl2
 import json
+from pathlib import Path
 
 # Configuración
 find_logs = ["Running model", "Calculating Jacobian matrix", "Parallelisation of lambda search"]
@@ -21,9 +21,45 @@ date_filter = None      #fecha del último log del master, None para que tome la
 agent_count = None
 id_task_master = None      #fecha del último log del master, None para que tome la primera encontrada.
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = SCRIPT_DIR.parent
+TERRAFORM_VARS_FILE = "variables.tf"
+TERRAFORM_STATE_FILE = "terraform.tfstate"
+LAUNCH_MASTER_AGENTS_SCRIPT = "launch_master_agents.py"
+LOG_DIR = PROJECT_DIR / "log_autoscaling"
+LOG_GROUP_MASTER = "/batch/pest-cmdic-linux-ensi-master"
+LOG_STREAM_PREFIX_MASTER = "master/default"
+LOG_GROUP_AGENTS = "/batch/pest-cmdic-linux-ensi-agents"
+CLUSTER_NAME = "pest-cmdic-linux-ensi-agent-ce_Batch_c7a20cbe-2287-3196-9c3a-14fc266ca43d"
+AGENT_JOB_QUEUE = "pest-cmdic-linux-ensi-agent-queue"
+TASK_FAMILY_AGENT = "pest-cmdic-linux-ensi-agent-job-def"
+
 
 def ts() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def resolve_project_path(file_name: str, required: bool = True) -> Path:
+    """Resuelve rutas relativas buscando primero en la carpeta padre del script."""
+    candidate = Path(file_name)
+    if candidate.is_absolute():
+        return candidate
+
+    direct_candidate = PROJECT_DIR / candidate
+    if direct_candidate.exists():
+        return direct_candidate
+
+    if candidate.parts:
+        for match in PROJECT_DIR.rglob(candidate.as_posix()):
+            return match
+
+    for match in PROJECT_DIR.rglob(candidate.name):
+        return match
+
+    if required:
+        raise FileNotFoundError(f"No se encontró '{file_name}' dentro de '{PROJECT_DIR}'")
+
+    return direct_candidate
 
 
 #extraer variables de terraform
@@ -35,6 +71,7 @@ def read_terraform_variables(file_path):
     Returns:
         Diccionario con las variables y sus valores por defecto
     """
+    file_path = resolve_project_path(file_path)
     with open(file_path, 'r') as f:
         tf_dict = hcl2.load(f)
     
@@ -61,7 +98,12 @@ def read_terraform_variables(file_path):
 #leer recursos desde el estado de terraform
 def read_terraform_state(state_file="terraform.tfstate"):
     """Lee el archivo tfstate y extrae recursos e IDs"""
-    with open(state_file, 'r') as f:
+    state_path = resolve_project_path(state_file, required=False)
+    if not state_path.exists():
+        print(f"{ts()} No se encontró el archivo de estado de Terraform en: {state_path}")
+        return {}
+
+    with open(state_path, 'r') as f:
         state = json.load(f)
     
     resources = {}
@@ -484,35 +526,28 @@ def validate_stop_tasks(task_ids, df_count_running, region, cluster_name, job_qu
     return pd.DataFrame(log_rows)
 
 if __name__ == "__main__":
-    LOG_DIR = "log_autoscaling"
-    os.makedirs(LOG_DIR, exist_ok=True)
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
 
     while True:
         print(f"{ts()} === Verificando necesidad de ajuste de agentes ECS ===")
         df_revision = pd.DataFrame(columns=["timestamp", "task_id", "job_id", "accion"])
         minutes_sleep = minutes_wait_between_checks_without_change
         #recuperar variables de terraform
-        tf_vars = read_terraform_variables('variables.tf')
+        tf_vars = read_terraform_variables(TERRAFORM_VARS_FILE)
         region = tf_vars.get('aws_region', "us-west-2")
         private_subnet_ids = tf_vars.get('private_subnet_ids')
         project_name = tf_vars.get('project_name')
         #recuperar recursos desde el estado de terraform
-        state = read_terraform_state()
+        state = read_terraform_state(TERRAFORM_STATE_FILE)
         ecs_tasks_sg_id = state.get("aws_security_group.ecs_tasks_sg", {}).get("id")
         print(f"{ts()} Region AWS desde Terraform: {region}")
         print(f"{ts()} Proyecto desde Terraform: {project_name}")
         print(f"{ts()} sg_id desde Terraform: {ecs_tasks_sg_id}")
-        log_group_master = f"/batch/pest-cmdic-linux-ensi-master"
-        log_stream_prefix_master = f"master/default"
-        log_group_agente = f"/batch/pest-cmdic-linux-ensi-agents"
-        cluster_name = f"pest-cmdic-linux-ensi-agent-ce_Batch_c7a20cbe-2287-3196-9c3a-14fc266ca43d"
-        agent_job_queue  = f"pest-cmdic-linux-ensi-agent-queue"
-        task_family_agent = f"pest-cmdic-linux-ensi-agent-job-def"
 
         #Obtener el stream más reciente del master
         max_stream = get_log_streams_by_prefix(
-            log_group=log_group_master,
-            prefix=log_stream_prefix_master,
+            log_group=LOG_GROUP_MASTER,
+            prefix=LOG_STREAM_PREFIX_MASTER,
             region=region
         )
 
@@ -523,10 +558,10 @@ if __name__ == "__main__":
             else:
                 if id_task_master != max_stream["logStreamName"].split('/')[-1]:
                     print(f"{ts()} Cambio detectado en el log stream del master: {id_task_master} -> {max_stream['logStreamName'].split('/')[-1]}. Se detiene el proceso de autoescalado.")
-                    exit()
+                    sys.exit()
             keywords = find_logs
             latest_event = get_latest_log_event(
-                log_group=log_group_master,
+                log_group=LOG_GROUP_MASTER,
                 log_stream_name=max_stream["logStreamName"],
                 keywords=keywords,
                 region=region
@@ -544,7 +579,7 @@ if __name__ == "__main__":
             print(f"{ts()} Agentes necesarios segun log master: {agent_count_new} con fecha de log: {date_filter_new}")
 
             # recuperar tareas de agente del cluster
-            ecs_list_agents_running = get_all_ecs_tasks(cluster_name, task_family_agent, desired_status="RUNNING", region=region)
+            ecs_list_agents_running = get_all_ecs_tasks(CLUSTER_NAME, TASK_FAMILY_AGENT, desired_status="RUNNING", region=region)
             agents_running = len(ecs_list_agents_running)
             # Extraer solo el ID después del último /
             task_ids = [arn.split('/')[-1] for arn in ecs_list_agents_running]
@@ -554,7 +589,7 @@ if __name__ == "__main__":
             #recuperar logs de agentes desde la fecha del último log del master
             start_ms = parse_iso(date_filter.strftime("%Y-%m-%dT%H:%M:%S"))
             end_ms = None
-            rows = fetch_events(log_group_agente, start_ms=start_ms, end_ms=end_ms, region=region)
+            rows = fetch_events(LOG_GROUP_AGENTS, start_ms=start_ms, end_ms=end_ms, region=region)
 
             # Validar variable rows (si es 0 es porque no hay logs nuevos en agentes desde la fecha del master) 
             # Se debe ajustar nuevamente la cantidad de agentes.
@@ -589,11 +624,12 @@ if __name__ == "__main__":
                         print(f"{ts()} Iniciando {tasks_to_start} tareas de agente adicionales...")
 
                         import subprocess
+                        launch_script_path = resolve_project_path(LAUNCH_MASTER_AGENTS_SCRIPT)
                         resultado = subprocess.run(
-                            [sys.executable, "launch_master_agents.py", str(tasks_to_start), "--agents-only"],
-                            capture_output=True, text=True, encoding="utf-8", errors="replace"
+                            [sys.executable, str(launch_script_path), str(tasks_to_start), "--agents-only"],
+                            capture_output=True, text=True, encoding="utf-8", errors="replace", check=False
                         )
-                        launch_log_path = os.path.join(LOG_DIR, f"log_launch_master_agents_{ts()}.txt")
+                        launch_log_path = LOG_DIR / f"log_launch_master_agents_{ts()}.txt"
                         with open(launch_log_path, "w", encoding="utf-8") as lf:
                             lf.write(resultado.stdout or "")
                             if resultado.stderr:
@@ -609,12 +645,12 @@ if __name__ == "__main__":
                     else:
                         print(f"{ts()} Sin cambio en cantidad de agentes, verificando agentes sin tareas o modelo completado...")
                         print(f"{ts()} === Verificacion de task_ids en df_count_running ===")
-                        df_revision = validate_stop_tasks(task_ids, df_count_running, region, cluster_name, agent_job_queue)
+                        df_revision = validate_stop_tasks(task_ids, df_count_running, region, CLUSTER_NAME, AGENT_JOB_QUEUE)
                         
                 else:
                     print(f"{ts()} Sin cambio en log master. Verificando agentes sin tareas o modelo completado...")
                     print(f"{ts()} === Verificacion de task_ids en df_count_running ===")
-                    df_revision = validate_stop_tasks(task_ids, df_count_running, region, cluster_name, agent_job_queue)
+                    df_revision = validate_stop_tasks(task_ids, df_count_running, region, CLUSTER_NAME, AGENT_JOB_QUEUE)
             else:
                 print(f"{ts()} No se encontraron logs nuevos en agentes desde la fecha del ultimo log del master.")
                 # print(f"{ts()} Creando {agent_count_new} agentes segun log del master...")
@@ -632,7 +668,7 @@ if __name__ == "__main__":
 
         # Exportar df de revision a CSV
         if not df_revision.empty:
-            csv_path = os.path.join(LOG_DIR, f"log_{ts()}.csv")
+            csv_path = LOG_DIR / f"log_{ts()}.csv"
             df_revision.to_csv(csv_path, index=False)
             print(f"{ts()} Log exportado: {csv_path}")
 
