@@ -574,6 +574,7 @@ if __name__ == "__main__":
                     #validar si es necesario aumentar o disminuir agentes
                     if agents_running < agent_count_new:
                         print(f"{ts()} Se requieren mas agentes. Actualmente hay {agents_running} agentes, se necesitan {agent_count_new} agentes.")
+                        agent_count = min(agent_count, agent_count_max)
                         segundos_espera = (agent_count - agents_running)*2
                         print(f"{ts()} Esperando {segundos_espera} segundos para liberar agentes anteriores ({agent_count} previos - {agents_running} activos)...")
                         if segundos_espera > 0:
@@ -599,7 +600,7 @@ if __name__ == "__main__":
                                 lf.write("\n--- STDERR ---\n")
                                 lf.write(resultado.stderr or "")
                         if resultado.returncode == 0:
-                            print(f"{ts()} launch_master_agents.py ejecutado correctamente")
+                            print(f"{ts()} launch_master_agents.py ejecutado correctamente para {tasks_to_start} tareas.")
                             print(f"{ts()} Log guardado: {launch_log_path}")
                         else:
                             print(f"{ts()} Error ejecutando launch_master_agents.py (ver {launch_log_path})")

@@ -603,7 +603,7 @@ if __name__ == "__main__":
                                 lf.write("\n--- STDERR ---\n")
                                 lf.write(resultado.stderr or "")
                         if resultado.returncode == 0:
-                            print(f"{ts()} launch_master_agents.py ejecutado correctamente")
+                            print(f"{ts()} launch_master_agents.py ejecutado correctamente para {tasks_to_start} tareas.")
                             print(f"{ts()} Log guardado: {launch_log_path}")
                         else:
                             print(f"{ts()} Error ejecutando launch_master_agents.py (ver {launch_log_path})")

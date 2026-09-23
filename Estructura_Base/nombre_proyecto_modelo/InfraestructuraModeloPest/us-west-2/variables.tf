@@ -26,8 +26,8 @@ variable "comando_agente"    { default = "/h" }
 variable "comando_autonomo" { default = "" }
 variable "master_host" { default = "master.pest-cmdic-batch.local" }
 variable "pest_port"         { default = 4004 }
-variable "model_timeout"         { default = "15h" }
-variable "model_timeout_stop"         { default = "10" }
+# variable "model_timeout"         { default = "15h" }
+# variable "model_timeout_stop"         { default = "10" }
 variable "nombre_jacobiano" { default = "CMDIC_Rajos_ensi.jco" }
 variable "activate_jacobiano" { default = "0" }
 

@@ -785,7 +785,7 @@ resource "aws_batch_job_definition" "pest_agent_master" {
       { name = "PROJECT_NAME",        value = var.project_name },
       { name = "AWS_REGION",          value = var.aws_region },
       { name = "MASTER_HOST",         value = var.master_host },
-      { name = "MODEL_TIMEOUT",       value = tostring(var.model_timeout) }
+      # { name = "MODEL_TIMEOUT",       value = tostring(var.model_timeout) }
     ]
 
     jobRoleArn = aws_iam_role.task_role.arn
@@ -898,7 +898,7 @@ resource "aws_batch_job_definition" "pest_agent_stop_master" {
       { name = "PROJECT_NAME",        value = var.project_name },
       { name = "AWS_REGION",          value = var.aws_region },
       { name = "MASTER_HOST",         value = var.master_host },
-      { name = "MODEL_TIMEOUT",       value = tostring(var.model_timeout_stop) }
+      # { name = "MODEL_TIMEOUT",       value = tostring(var.model_timeout_stop) }
     ]
 
     jobRoleArn = aws_iam_role.task_role.arn
