@@ -9,7 +9,7 @@ El **MVP** comprende las Fases 0 y 1: corregir los riesgos activos y eliminar la
 **Hallazgos de auditoría que originan estos requisitos:** F-01 (sin backend Terraform remoto), F-02 (bug $RETRY_CODE), F-03 (autoscaler local), F-04/F-05 (datos sensibles en código), F-07 (autoscaler hardcodeado), F-08 (S3 wildcard en IAM), F-10 (no hay verificación de backup antes de destroy), F-16 (sin métricas de Phi).
 
 **Preguntas abiertas condicionantes:**
-- **OQ-03:** El formato exacto de las líneas de Phi en los logs del master debe validarse con logs reales antes de implementar los requisitos de extracción (Fases 2–3).
+- **OQ-03:** ✅ **RESUELTO mediante estado del arte** (ver `docs/auditoria/23_phi_log_format_research.md`). El proyecto usa PEST_HP (variante paralela de PEST clásico), cuyo formato de salida es estable y documentado. Los patrones regex de extracción de Phi están fundamentados en la documentación oficial de PEST y en los parsers de pyEMU. Ya no bloquea las Fases 2–3; se mantiene `validate_phi_log_format.py` como paso de confirmación recomendado contra un log real.
 - **OQ-07:** La duración típica de calibraciones debe validarse antes de fijar el valor por defecto de `ttl_hours`.
 - **OQ-08:** El valor de `stagnation_window_iterations` debe calibrarse con histórico de calibraciones reales antes de activar alertas STAGNATED en producción.
 
@@ -197,15 +197,17 @@ El **MVP** comprende las Fases 0 y 1: corregir los riesgos activos y eliminar la
 
 ---
 
-### Requirement 11: Extracción de Métricas de Phi y Calidad de Calibración (Fases 2–3 — condicionado OQ-03)
+### Requirement 11: Extracción de Métricas de Phi y Calidad de Calibración (Fases 2–3 — OQ-03 resuelto)
 
-> **Nota:** La implementación completa de este requisito está condicionada a la resolución de **OQ-03**: el formato exacto de las líneas de Phi en el stdout de `pest_hp` debe confirmarse con un log real de master antes de implementar los Metric Filters y la Lambda_ExtractPhi. Los criterios 1–3 pueden implementarse en Fase 2 una vez resuelto OQ-03. Los criterios 4–8 corresponden a Fase 3.
+> **Nota:** Este requisito **ya no está bloqueado por OQ-03**. El proyecto usa PEST_HP (variante paralela de PEST clásico), cuyo formato de stdout/record file es estable y documentado. Los patrones de extracción de Phi están fundamentados en la documentación oficial de PEST y en los parsers de pyEMU (ver `docs/auditoria/23_phi_log_format_research.md`), y se especifican concretamente en el criterio 9. Los criterios 1–3 pueden implementarse en Fase 2; los criterios 4–8 corresponden a Fase 3. La tarea `validate_phi_log_format.py` pasa de ser un **prerequisito bloqueante** a una **confirmación recomendada** de los patrones ya fundamentados contra un log real.
+>
+> **Riesgo residual:** El formato exacto puede variar levemente según la versión específica de PEST_HP compilada en la imagen (**OQ-05**) y según si el `.pst` corre en modo `estimation` vs `regularization`, que afecta la aparición de líneas de Phi de regularización (**OQ-09**). Por ello se mantiene `validate_phi_log_format.py` como paso de confirmación antes de activar alertas de calidad en producción.
 
 **User Story:** Como científico del equipo, quiero poder ver la evolución del Phi de cada iteración PEST en un dashboard de CloudWatch, para saber si la calibración está convergiendo, mejorando lentamente o estancada sin necesidad de conectarme manualmente a los logs.
 
 #### Acceptance Criteria
 
-1. WHEN the master log group receives a log event containing a Phi value (format confirmed via OQ-03), THE Lambda_ExtractPhi SHALL parse that value and publish it as the `PhiCurrent` metric to the `PEST/Calibration` namespace with the `CalibrationId` dimension.
+1. WHEN the master log group receives a log event containing a Phi value (format specified in criterion 9), THE Lambda_ExtractPhi SHALL parse that value and publish it as the `PhiCurrent` metric to the `PEST/Calibration` namespace with the `CalibrationId` dimension.
 2. THE Lambda_ExtractPhi SHALL maintain and publish a `PhiBest` metric that represents the lowest Phi value observed during the current calibration run, updating it each time a new Phi reading is lower than the current best.
 3. THE Lambda_ExtractPhi SHALL publish a `CurrentIteration` metric representing the PEST iteration number extracted from the log, incrementing it each time a new iteration is detected.
 4. THE Quality_Engine SHALL classify each calibration into one of four `QualityState` values: `IMPROVING` (sliding mean relative improvement > 1%), `SLOW_IMPROVEMENT` (0.1%–1%), `STAGNATED` (< 0.1% over the last `stagnation_window_iterations` iterations), or `CONVERGED` (explicit PEST message detected).
@@ -213,6 +215,14 @@ El **MVP** comprende las Fases 0 y 1: corregir los riesgos activos y eliminar la
 6. WHEN `QualityState.STAGNATED` is detected, THE Quality_Engine SHALL publish a WARNING notification via SNS and SHALL NOT terminate any Batch jobs or modify the `ExecutionState`.
 7. THE Quality_Engine SHALL compute the sliding mean relative improvement using only the last `stagnation_window_iterations` Phi readings (default value conditioned on OQ-08), where relative improvement for iteration k is defined as `(Phi_{k-1} - Phi_k) / Phi_{k-1}` when `Phi_{k-1} > 0`.
 8. WHEN `phi_history` contains fewer than 2 elements, THE Quality_Engine SHALL return `QualityState.UNKNOWN` without attempting to compute improvement.
+9. THE Lambda_ExtractPhi SHALL extract Phi values and iteration events from the PEST_HP master stdout using the following Python regular expressions, derived from the official PEST documentation and the pyEMU parsers:
+   - Iteración actual: `OPTIMISATION ITERATION NO\.\s*:\s*(\d+)`
+   - Phi inicial de iteración: `[Ss]tarting phi for this iteration\s*:\s*([0-9.Ee+-]+)`
+   - Phi más bajo de iteración: `[Ll]owest phi this iteration\s*:\s*([0-9.Ee+-]+)`
+   - Phi final: `[Ff]inal phi\s*:\s*([0-9.Ee+-]+)`
+   - Convergencia: `[Oo]ptimis\w*\s+complete`, complementado con las palabras clave de control `RELPARSTP|PHIREDSTP|NOPTMAX`
+   - Modelos solicitados (ya en uso por el autoscaler): `model\s+(?:up\s+to\s+)?(\d+)\s+times?`
+10. WHERE the project uses PEST_HP (binaries `pest_hp` / `agent_hp`), THE Lambda_ExtractPhi SHALL extract Phi from the master stdout using the patterns in criterion 9. WHERE the project migrates to PEST++ (binaries `pestpp-glm` / `pestpp-ies`), THE Lambda_ExtractPhi SHALL prefer parsing the `.iobj` (iteration objective) CSV file (columns `iteration, total_phi, measurement_phi, regularization_phi, ...`) as the source of Phi values instead of the stdout patterns.
 
 ---
 
@@ -344,7 +354,7 @@ El **MVP** comprende las Fases 0 y 1: corregir los riesgos activos y eliminar la
 | R8: Lambda Autoscaler | 1 | F-03, F-07 | Lambda Autoscaler component | 🔴 CRÍTICO |
 | R9: Safe Destroy | 1 | F-10 | safe_destroy.py component | 🟠 ALTO |
 | R10: Observabilidad métricas/alarmas | 2 | F-16 | CloudWatch metrics table | 🟠 ALTO |
-| R11: Extracción Phi y QualityState | 2–3 | F-16 | Lambda_ExtractPhi, Quality classifier | 🟡 MEDIO (OQ-03) |
+| R11: Extracción Phi y QualityState | 2–3 | F-16 | Lambda_ExtractPhi, Quality classifier | 🟡 MEDIO (patrones fundamentados; confirmar vs log real) |
 | R12: Config Parser/Serializer | 1–6 | — | CalibrationConfig / Config_Parser | 🟠 ALTO |
 | R13: Calibration Manifest | 5 | — | CalibrationManifest data model | 🟡 MEDIO |
 | R14: Docker image SHA tagging | 5 | — | Build_System / reproducibilidad | 🟡 MEDIO |
