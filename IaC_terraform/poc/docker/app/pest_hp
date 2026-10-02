@@ -1,0 +1,32 @@
+#!/bin/bash
+# Dummy pest_hp (master). Simula una calibracion PEST_HP con el formato de log
+# real para validar el Quality Engine. NO ejecuta ningun modelo.
+set -e
+echo "PEST_HP dummy master - $(date '+%Y-%m-%d %H:%M:%S')"
+echo "Model: ${NOMBRE_MODELO_PEST:-dummy.pst}"
+
+phi=10000
+iter=0
+for i in 1 2 3 4 5 6; do
+  iter=$i
+  echo "OPTIMISATION ITERATION NO.        : ${iter}"
+  echo "   Starting phi for this iteration                     :   ${phi}.0"
+  # Simula corridas del modelo (lo que lee el autoscaler)
+  echo "   Calculating Jacobian matrix: running model 8 times ....."
+  sleep 3
+  # Phi decreciente: 10000 -> 4000 -> 1600 -> 640 -> 256 -> ~100 (converge)
+  phi=$(( phi * 2 / 5 ))
+  echo "   Lowest phi this iteration                           :   ${phi}.0"
+  echo "   Model run complete."
+  sleep 2
+done
+
+echo "   Final phi                                           :   ${phi}.0"
+echo "Optimisation complete: the 5 lowest phi's are within a relative distance of RELPARSTP"
+echo "PEST_HP dummy master finished - $(date '+%Y-%m-%d %H:%M:%S')"
+
+# Subir un resultado dummy a S3 para validar safe_destroy
+if [ -n "${BUCKET_NAME:-}" ] && [ -n "${CALIBRATION_ID:-}" ]; then
+  echo "dummy result phi=${phi}" > /tmp/result.dat
+  aws s3 cp /tmp/result.dat "s3://${BUCKET_NAME}/calibrations/${CALIBRATION_ID}/modelo/result.dat" || echo "WARN: no se pudo subir a S3"
+fi

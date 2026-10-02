@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+echo "agent_hp dummy - conectando a master ${MASTER_HOST:-unknown}:${PEST_PORT:-4004}"
+echo "Running model"
+sleep 5
+echo "Model run complete."
+echo "agent_hp dummy finished"
