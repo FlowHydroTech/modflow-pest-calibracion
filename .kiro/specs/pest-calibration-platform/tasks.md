@@ -350,34 +350,34 @@ Añade métricas en tiempo real, alarmas y retención de logs para detectar fall
 
 Condicionado a OQ-03 (formato de logs Phi confirmado). Implementa la extracción de Phi y clasificación de calidad.
 
-- [ ] 21. Implementar Lambda ExtractPhiMetrics
+- [x] 21. Implementar Lambda ExtractPhiMetrics
   - Crear `lambdas/extract_phi/handler.py` con el handler disparado por CloudWatch Logs subscription filter
   - Implementar `extract_phi_from_events(events, phi_pattern) -> list[PhiReading]` usando el patrón regex confirmado vía OQ-03
   - Publicar métricas `PhiCurrent`, `PhiBest`, `CurrentIteration` con dimensión `CalibrationId`
   - Definir IAM Role con permisos mínimos: `logs:FilterLogEvents`, `logs:GetLogEvents`, `cloudwatch:PutMetricData`
   - _Requisitos: 11.1, 11.2, 11.3, 3.4_
 
-  - [ ] 21.1 Crear estructura `lambdas/extract_phi/` con `handler.py`
+  - [x] 21.1 Crear estructura `lambdas/extract_phi/` con `handler.py`
     - Implementar esqueleto del handler con parseo del evento de CloudWatch Logs
     - _Requisitos: 11.1_
 
-  - [ ] 21.2 Implementar `extract_phi_from_events` con el patrón regex confirmado (OQ-03)
+  - [x] 21.2 Implementar `extract_phi_from_events` con el patrón regex confirmado (OQ-03)
     - Parsear eventos de log para extraer valor de Phi y número de iteración
     - _Requisitos: 11.1, 11.3_
 
-  - [ ] 21.3 Implementar publicación de `PhiCurrent`, `PhiBest`, `CurrentIteration`
+  - [x] 21.3 Implementar publicación de `PhiCurrent`, `PhiBest`, `CurrentIteration`
     - Mantener el mínimo histórico para `PhiBest`; publicar las tres métricas con dimensión `CalibrationId`
     - _Requisitos: 11.1, 11.2, 11.3_
 
-  - [ ] 21.4 Crear módulo Terraform para Lambda ExtractPhi + IAM Role
+  - [x] 21.4 Crear módulo Terraform para Lambda ExtractPhi + IAM Role
     - Definir Lambda, subscription filter del log group del master y IAM Role con permisos mínimos
     - _Requisitos: 3.4_
 
-  - [ ]* 21.5 Escribir tests unitarios para `extract_phi_from_events`
+  - [x]* 21.5 Escribir tests unitarios para `extract_phi_from_events`
     - Probar con líneas de log reales y edge cases (línea sin Phi, múltiples valores en el mismo evento)
     - _Requisitos: 11.1_
 
-- [ ] 22. Implementar clasificador `QualityState` (Quality Engine)
+- [x] 22. Implementar clasificador `QualityState` (Quality Engine)
   - Crear `calibration_utils/quality.py` con `classify_calibration_quality(phi_history, convergence_msg_detected, config) -> QualityState`
   - Implementar ventana deslizante con `stagnation_window_iterations` configurables
   - Garantizar que `CONVERGED` solo se retorna cuando `convergence_msg_detected=True`
@@ -385,35 +385,35 @@ Condicionado a OQ-03 (formato de logs Phi confirmado). Implementa la extracción
   - Retornar `QualityState.UNKNOWN` cuando `phi_history` tiene menos de 2 elementos
   - _Requisitos: 11.4, 11.5, 11.6, 11.7, 11.8_
 
-  - [ ] 22.1 Implementar `classify_calibration_quality` en `calibration_utils/quality.py`
+  - [x] 22.1 Implementar `classify_calibration_quality` en `calibration_utils/quality.py`
     - Implementar el algoritmo de ventana deslizante del diseño con los cuatro estados
     - _Requisitos: 11.4, 11.5, 11.7, 11.8_
 
-  - [ ]* 22.2 Escribir tests unitarios para el clasificador
+  - [x]* 22.2 Escribir tests unitarios para el clasificador
     - Probar: lista vacía → UNKNOWN, 1 elemento → UNKNOWN, convergencia numérica sin mensaje → no CONVERGED, STAGNATED no lanza excepción
     - _Requisitos: 11.5, 11.6, 11.8_
 
-  - [ ]* 22.3 Escribir property test: CONVERGED nunca sin mensaje PEST
+  - [x]* 22.3 Escribir property test: CONVERGED nunca sin mensaje PEST
     - Para cualquier `phi_history` y `convergence_msg_detected=False`, el resultado nunca es `CONVERGED`
     - **Property 1: CONVERGED requires an explicit PEST message**
     - **Validates: Requirements 11.5**
 
-  - [ ]* 22.4 Escribir property test: STAGNATED nunca detiene la calibración
+  - [x]* 22.4 Escribir property test: STAGNATED nunca detiene la calibración
     - Para cualquier estado STAGNATED, verificar que no se llama a `batch:TerminateJob` ni se modifica el `ExecutionState`
     - **Property 2: STAGNATED never stops the calibration automatically**
     - **Validates: Requirements 11.6**
 
-- [ ] 23. Configurar alerta SNS WARNING para `QualityState.STAGNATED`
+- [x] 23. Configurar alerta SNS WARNING para `QualityState.STAGNATED`
   - Integrar el clasificador en el Lambda ExtractPhi: cuando el estado sea STAGNATED, publicar alerta WARNING via SNS
   - Verificar que el Lambda no llama a `batch:TerminateJob` cuando detecta STAGNATED
   - Publicar métrica `CalibrationQualityState` (0–4 según enum) con dimensión `CalibrationId`
   - _Requisitos: 11.4, 11.6_
 
-  - [ ] 23.1 Integrar clasificador de calidad en `lambdas/extract_phi/handler.py`
+  - [x] 23.1 Integrar clasificador de calidad en `lambdas/extract_phi/handler.py`
     - Llamar a `classify_calibration_quality` después de extraer el Phi y publicar `CalibrationQualityState`; enviar SNS WARNING si STAGNATED
     - _Requisitos: 11.4, 11.6_
 
-- [ ] 24. Checkpoint Fase 3 — Verificar Quality Engine
+- [x] 24. Checkpoint Fase 3 — Verificar Quality Engine
   - Ejecutar todos los property tests del clasificador y tests del Lambda ExtractPhi
   - Asegurarse de que todos los tests pasen; preguntar al usuario si surgen dudas.
 
