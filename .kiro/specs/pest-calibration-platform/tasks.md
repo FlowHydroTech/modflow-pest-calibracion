@@ -124,7 +124,7 @@ Corrige los riesgos activos sin agregar nuevas funcionalidades. Todas las tareas
 
 Elimina la dependencia de la conexión del operador e implementa el núcleo del Control Plane. Todas las tareas de esta fase son obligatorias (MVP).
 
-- [ ] 9. Implementar `calibration_utils/config.py`: CalibrationConfig + parser/validator
+- [x] 9. Implementar `calibration_utils/config.py`: CalibrationConfig + parser/validator
   - Crear el directorio `calibration_utils/` con `__init__.py`
   - Implementar el dataclass `CalibrationConfig` con todos los campos del diseño y sus valores por defecto
   - Implementar `load_calibration_config(path: str) -> CalibrationConfig` usando PyYAML
@@ -132,51 +132,51 @@ Elimina la dependencia de la conexión del operador e implementa el núcleo del 
   - Implementar `generate_calibration_id() -> str` con formato `CAL-YYYYMMDD-NNN` y contador secuencial basado en S3
   - _Requisitos: 5.1, 5.2, 5.3, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 12.1, 12.2_
 
-  - [ ] 9.1 Crear `calibration_utils/__init__.py` y estructura de paquete
+  - [x] 9.1 Crear `calibration_utils/__init__.py` y estructura de paquete
     - Inicializar el paquete con imports públicos de las funciones principales
     - _Requisitos: 16.3_
 
-  - [ ] 9.2 Implementar `CalibrationConfig` dataclass en `calibration_utils/config.py`
+  - [x] 9.2 Implementar `CalibrationConfig` dataclass en `calibration_utils/config.py`
     - Definir todos los campos con tipos y valores por defecto según el diseño
     - _Requisitos: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-  - [ ] 9.3 Implementar `load_calibration_config` y `validate_calibration_config`
+  - [x] 9.3 Implementar `load_calibration_config` y `validate_calibration_config`
     - Parser YAML que retorna `CalibrationConfig` y validador que retorna `ValidationResult` con mensajes descriptivos por campo fallido
     - _Requisitos: 6.6, 6.7, 12.1, 12.2_
 
-  - [ ] 9.4 Implementar `generate_calibration_id` con formato `CAL-YYYYMMDD-NNN`
+  - [x] 9.4 Implementar `generate_calibration_id` con formato `CAL-YYYYMMDD-NNN`
     - Usar fecha UTC + contador secuencial; garantizar unicidad para múltiples IDs en el mismo día
     - _Requisitos: 5.1, 5.2, 5.3_
 
-  - [ ]* 9.5 Escribir tests unitarios para `CalibrationConfig` y el validador
+  - [x]* 9.5 Escribir tests unitarios para `CalibrationConfig` y el validador
     - Probar campos faltantes, `initial_agents > max_agents`, `port` fuera de rango, `ttl_hours <= 0`
     - _Requisitos: 6.2, 6.3, 6.4, 6.6_
 
-  - [ ]* 9.6 Escribir property test: configuraciones con `initial_agents > max_agents` siempre fallan validación
+  - [x]* 9.6 Escribir property test: configuraciones con `initial_agents > max_agents` siempre fallan validación
     - Usar `hypothesis` para generar configuraciones inválidas; verificar que `valid=False` siempre
     - **Property 6: CalibrationConfig validation rejects constraint violations**
     - **Validates: Requirements 6.2, 6.3, 6.4**
 
-  - [ ]* 9.7 Escribir property test de round-trip YAML para `CalibrationConfig`
+  - [x]* 9.7 Escribir property test de round-trip YAML para `CalibrationConfig`
     - Serializar a YAML y parsear de vuelta; verificar equivalencia de todos los campos
     - **Property 9: Config Parser round-trip preserves CalibrationConfig**
     - **Validates: Requirements 12.3, 12.4**
 
-  - [ ]* 9.8 Escribir property test: todos los CalibrationIds generados cumplen formato `^CAL-\d{8}-\d{3}$`
+  - [x]* 9.8 Escribir property test: todos los CalibrationIds generados cumplen formato `^CAL-\d{8}-\d{3}$`
     - Generar N IDs y verificar que todos coinciden con el patrón regex
     - **Property 5: CalibrationId format is enforced across all components**
     - **Validates: Requirements 5.1, 5.3**
 
-- [ ] 10. Implementar `Config_Serializer`: serialización YAML de `CalibrationConfig`
+- [x] 10. Implementar `Config_Serializer`: serialización YAML de `CalibrationConfig`
   - Agregar función `serialize_calibration_config(config: CalibrationConfig) -> str` en `calibration_utils/config.py`
   - Garantizar que el YAML generado es parseable de vuelta a un objeto equivalente
   - _Requisitos: 12.3, 12.4_
 
-  - [ ] 10.1 Implementar `serialize_calibration_config` en `calibration_utils/config.py`
+  - [x] 10.1 Implementar `serialize_calibration_config` en `calibration_utils/config.py`
     - Serializar el dataclass a YAML preservando tipos y valores por defecto
     - _Requisitos: 12.3_
 
-- [ ] 11. Implementar `calibration_utils/batch.py`: gestión de jobs AWS Batch
+- [x] 11. Implementar `calibration_utils/batch.py`: gestión de jobs AWS Batch
   - Implementar `submit_master_job(job_queue, job_def, env_vars) -> str`
   - Implementar `wait_for_master_ip(job_id, timeout_s=600) -> str | None` (retorna `None` si timeout sin bloquear)
   - Implementar `submit_agent_jobs(job_queue, job_def, n, master_ip) -> list[str]`
@@ -184,19 +184,19 @@ Elimina la dependencia de la conexión del operador e implementa el núcleo del 
   - Implementar `terminate_job(job_id, reason) -> None` usando `batch:TerminateJob`
   - _Requisitos: 8.3, 16.2, 16.5_
 
-  - [ ] 11.1 Implementar `submit_master_job` y `submit_agent_jobs` en `calibration_utils/batch.py`
+  - [x] 11.1 Implementar `submit_master_job` y `submit_agent_jobs` en `calibration_utils/batch.py`
     - Usar `boto3.client('batch').submit_job()` con parámetros del diseño
     - _Requisitos: 16.2_
 
-  - [ ] 11.2 Implementar `wait_for_master_ip` con timeout configurable
+  - [x] 11.2 Implementar `wait_for_master_ip` con timeout configurable
     - Sondear `batch:DescribeJobs` hasta que el job esté en RUNNING y tenga IP via EC2 tags; retornar `None` si se agota `timeout_s`
     - _Requisitos: 16.5_
 
-  - [ ] 11.3 Implementar `get_running_jobs` y `terminate_job` usando exclusivamente Batch API
+  - [x] 11.3 Implementar `get_running_jobs` y `terminate_job` usando exclusivamente Batch API
     - Prohibir cualquier llamada a ECS; documentar explícitamente en el módulo que solo se usa Batch API
     - _Requisitos: 8.3, 16.2_
 
-  - [ ]* 11.4 Escribir tests unitarios para `batch.py` con `moto`
+  - [x]* 11.4 Escribir tests unitarios para `batch.py` con `moto`
     - Verificar que `wait_for_master_ip` retorna `None` al timeout, que `get_running_jobs` nunca llama ECS
     - _Requisitos: 8.3, 16.5_
 
