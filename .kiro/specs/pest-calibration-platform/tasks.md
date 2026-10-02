@@ -290,56 +290,56 @@ Elimina la dependencia de la conexión del operador e implementa el núcleo del 
 
 Añade métricas en tiempo real, alarmas y retención de logs para detectar fallos sin conexión manual.
 
-- [ ] 16. Implementar publicación de métricas CloudWatch en `calibration_utils/`
+- [x] 16. Implementar publicación de métricas CloudWatch en `calibration_utils/`
   - Agregar función `publish_metric(name, value, calibration_id, unit="None")` en un módulo `calibration_utils/metrics.py`
   - Garantizar que toda llamada a `cloudwatch:PutMetricData` incluye la dimensión `CalibrationId` con valor no vacío
   - Publicar `MasterHealth`, `ActiveWorkers` y `CalibrationRuntime` desde el Lambda Autoscaler
   - _Requisitos: 10.1, 10.2_
 
-  - [ ] 16.1 Crear `calibration_utils/metrics.py` con `publish_metric`
+  - [x] 16.1 Crear `calibration_utils/metrics.py` con `publish_metric`
     - Implementar wrapper de `cloudwatch:PutMetricData` que fuerza la dimensión `CalibrationId`
     - _Requisitos: 10.1_
 
-  - [ ] 16.2 Integrar publicación de métricas en el Lambda Autoscaler
+  - [x] 16.2 Integrar publicación de métricas en el Lambda Autoscaler
     - Llamar a `publish_metric` para `MasterHealth`, `ActiveWorkers` al final de cada ciclo
     - _Requisitos: 10.2, 8.8_
 
-  - [ ]* 16.3 Escribir property test: todas las métricas publicadas llevan dimensión `CalibrationId`
+  - [x]* 16.3 Escribir property test: todas las métricas publicadas llevan dimensión `CalibrationId`
     - **Property 7: All published metrics carry the CalibrationId dimension**
     - **Validates: Requirements 10.1**
 
-- [ ] 17. Configurar CloudWatch Alarms + SNS topic para alertas críticas
+- [x] 17. Configurar CloudWatch Alarms + SNS topic para alertas críticas
   - Crear módulo Terraform `infra/observability.tf` con: SNS topic `pest-alerts`, alarma sobre `MasterHealth` (valor 0 por 2 períodos de 5 min), alarma de TTL de infraestructura activa
   - Configurar suscripción email al SNS topic usando `alert_email` del `CalibrationConfig`
   - _Requisitos: 10.4, 10.5, 10.6_
 
-  - [ ] 17.1 Crear `infra/observability.tf` con SNS topic y alarma de `MasterHealth`
+  - [x] 17.1 Crear `infra/observability.tf` con SNS topic y alarma de `MasterHealth`
     - Definir `aws_sns_topic`, `aws_sns_topic_subscription` (email), `aws_cloudwatch_metric_alarm` para `MasterHealth`
     - _Requisitos: 10.4, 10.5_
 
-  - [ ] 17.2 Agregar alarma de TTL de infraestructura activa
+  - [x] 17.2 Agregar alarma de TTL de infraestructura activa
     - Definir `aws_cloudwatch_metric_alarm` sobre `CalibrationRuntime` que dispara cuando supera `ttl_hours * 3600` segundos
     - _Requisitos: 10.6_
 
-- [ ] 18. Configurar retención de 90 días en log groups del master
+- [x] 18. Configurar retención de 90 días en log groups del master
   - Agregar `aws_cloudwatch_log_group` con `retention_in_days = 90` en el módulo Terraform activo para los log groups `/batch/{id}-master` y `/batch/{id}-agents`
   - _Requisitos: 10.3_
 
-  - [ ] 18.1 Agregar configuración de retención de logs en `talabre-linux/main.tf`
+  - [x] 18.1 Agregar configuración de retención de logs en `talabre-linux/main.tf`
     - Crear o actualizar `aws_cloudwatch_log_group` para master y agentes con `retention_in_days = 90`
     - _Requisitos: 10.3_
 
-- [ ] 19. Crear script de validación del formato de logs Phi del master (OQ-03)
+- [x] 19. Crear script de validación del formato de logs Phi del master (OQ-03)
   - Crear `scripts/validate_phi_log_format.py` que descarga los últimos N eventos del log group del master y prueba los patrones candidatos: `r'Phi\s*=\s*([\d\.]+)'`, `r'Objective function value:\s*([\d\.]+)'`, `r'Current phi\s*=\s*([\d\.]+)'`
   - Imprimir el patrón que genera más matches y los primeros 5 ejemplos de cada uno
   - Este script es un prerequisito para la Fase 3 — su output confirma OQ-03
   - _Requisitos: 11.1_
 
-  - [ ] 19.1 Crear `scripts/validate_phi_log_format.py`
+  - [x] 19.1 Crear `scripts/validate_phi_log_format.py`
     - Script que toma `--log-group` y `--calibration-id` como argumentos CLI, descarga eventos y prueba los patrones candidatos de Phi
     - _Requisitos: 11.1_
 
-- [ ] 20. Checkpoint Fase 2 — Verificar observabilidad
+- [x] 20. Checkpoint Fase 2 — Verificar observabilidad
   - Ejecutar todos los tests de `calibration_utils/metrics.py`
   - Verificar que no hay llamadas a `cloudwatch:PutMetricData` sin dimensión `CalibrationId`
   - Asegurarse de que todos los tests pasen; preguntar al usuario si surgen dudas.

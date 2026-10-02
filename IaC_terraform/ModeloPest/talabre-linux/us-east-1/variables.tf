@@ -149,3 +149,9 @@ variable "agent_max_vcpus" {
   type        = number
   default     = 1000
 }
+
+# Retencion de logs del master (requisito 10.3: minimo 90 dias)
+variable "master_log_retention_days" {
+  type    = number
+  default = 90
+}

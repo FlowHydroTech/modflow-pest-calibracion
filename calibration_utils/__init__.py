@@ -16,6 +16,7 @@ from calibration_utils.config import (
     is_valid_calibration_id,
     CALIBRATION_ID_PATTERN,
 )
+from calibration_utils.metrics import publish_metric, publish_metrics, METRIC_NAMESPACE
 
 __all__ = [
     "CalibrationConfig",
@@ -27,4 +28,7 @@ __all__ = [
     "generate_calibration_id",
     "is_valid_calibration_id",
     "CALIBRATION_ID_PATTERN",
+    "publish_metric",
+    "publish_metrics",
+    "METRIC_NAMESPACE",
 ]

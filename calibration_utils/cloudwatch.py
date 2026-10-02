@@ -23,9 +23,6 @@ def _logs_client(region: str):
     return boto3.client("logs", region_name=region)
 
 
-def _cw_client(region: str):
-    return boto3.client("cloudwatch", region_name=region)
-
 
 def fetch_recent_events(
     log_group: str, minutes: int = 15, region: str = "us-east-1"
@@ -80,26 +77,6 @@ def last_event_age_seconds(
     return (now_ms - last_ts) / 1000.0
 
 
-def publish_metric(
-    name: str, value: float, calibration_id: str,
-    unit: str = "None", region: str = "us-east-1",
-) -> None:
-    """Publica una metrica custom en PEST/Calibration con dimension CalibrationId.
-
-    Correctness property 7: toda metrica incluye obligatoriamente la dimension
-    CalibrationId con valor no vacio.
-    """
-    if not calibration_id:
-        raise ValueError("calibration_id es obligatorio para publicar una metrica")
-    client = _cw_client(region)
-    client.put_metric_data(
-        Namespace=METRIC_NAMESPACE,
-        MetricData=[
-            {
-                "MetricName": name,
-                "Value": float(value),
-                "Unit": unit,
-                "Dimensions": [{"Name": "CalibrationId", "Value": calibration_id}],
-            }
-        ],
-    )
+# publish_metric vive en calibration_utils/metrics.py (fuente unica, tarea 16.1).
+# Se re-exporta aqui por compatibilidad con los imports existentes.
+from calibration_utils.metrics import publish_metric  # noqa: E402,F401

@@ -1,0 +1,6 @@
+# Copiar a terraform.tfvars y completar. NO versionar valores reales.
+project_name   = "pest-talabre-linux"
+calibration_id = "CAL-20260115-001"
+alert_email    = "operador@ejemplo.com"
+ttl_hours      = 72
+aws_region     = "us-east-1"
