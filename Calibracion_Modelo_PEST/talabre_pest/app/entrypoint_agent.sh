@@ -111,7 +111,7 @@ while [ $RETRY_COUNT -le $MAX_RETRIES ]; do
         EXIT_CODE=$?
         RETRY_COUNT=$((RETRY_COUNT + 1))
         
-        if [ $RETRY_CODE -eq 80 ] || echo "wine: failed to map the shared user data" 2>&1 | grep -q "c0000018"; then
+        if [ $EXIT_CODE -eq 80 ] || echo "wine: failed to map the shared user data" 2>&1 | grep -q "c0000018"; then
             if [ $RETRY_COUNT -le $MAX_RETRIES ]; then
                 echo "ADVERTENCIA: Error c0000018 detectado. Reintentando ($RETRY_COUNT/$MAX_RETRIES)..."
                 sleep 5

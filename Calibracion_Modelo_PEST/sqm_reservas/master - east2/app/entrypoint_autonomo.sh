@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 # Definir variable PROJECT_NAME con el nombre del modelo a calibrar
 #mostrar IP del servidor Master
 echo "Tu(s) IP(s): $(hostname -I)"

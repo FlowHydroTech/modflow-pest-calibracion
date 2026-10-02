@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 # Definir variable PROJECT_NAME con el nombre del modelo a calibrar
 # Iniciar display virtual para Wine
 Xvfb :99 -screen 0 1024x768x24 &

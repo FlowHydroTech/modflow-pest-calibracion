@@ -1,4 +1,4 @@
-﻿# Implementation Plan: PEST Calibration Platform
+# Implementation Plan: PEST Calibration Platform
 
 ## Overview
 
@@ -14,30 +14,30 @@ Todas las tareas son de código: crear archivos, modificar scripts, implementar 
 
 Corrige los riesgos activos sin agregar nuevas funcionalidades. Todas las tareas de esta fase son obligatorias.
 
-- [ ] 1. Corregir bug `$RETRY_CODE` → `$EXIT_CODE` en entrypoints de agente
+- [x] 1. Corregir bug `$RETRY_CODE` → `$EXIT_CODE` en entrypoints de agente
   - Buscar todas las ocurrencias de `$RETRY_CODE` en archivos `entrypoint_agent.sh` dentro de `Calibracion_Modelo_PEST/` y reemplazar por `$EXIT_CODE`
   - Verificar que `EXIT_CODE=$?` se asigna inmediatamente después de la llamada al proceso agente en cada entrypoint modificado
   - Confirmar que la condición de retry evalúa `[ $EXIT_CODE -eq 80 ]` en todos los archivos corregidos
   - _Requisitos: 1.1, 1.2, 1.3, 1.4_
 
-  - [ ] 1.1 Corregir entrypoints en `cmdic_linux_compile/app/entrypoint_agent.sh`
+  - [x] 1.1 Corregir entrypoints en `cmdic_linux_compile/app/entrypoint_agent.sh`
     - Reemplazar `$RETRY_CODE` por `$EXIT_CODE` y verificar asignación `EXIT_CODE=$?`
     - _Requisitos: 1.1, 1.2, 1.4_
 
-  - [ ] 1.2 Corregir entrypoints en todos los subdirectorios de `sqm_reservas/`
+  - [x] 1.2 Corregir entrypoints en todos los subdirectorios de `sqm_reservas/`
     - Aplicar la misma corrección en `sqm_reservas/master/app/entrypoint_agent.sh`, `master - east2/app/entrypoint_agent.sh` y `master1/app/entrypoint_agent.sh`
     - _Requisitos: 1.1, 1.2, 1.4_
 
-  - [ ] 1.3 Corregir entrypoints en `Estructura_Base/` y cualquier otro subdirectorio activo
+  - [x] 1.3 Corregir entrypoints en `Estructura_Base/` y cualquier otro subdirectorio activo
     - Buscar con `grep -r 'RETRY_CODE'` todos los archivos restantes y aplicar la corrección
     - _Requisitos: 1.1, 1.2, 1.4_
 
-- [ ] 2. Agregar shebang y `set -e` a entrypoints que los omiten
+- [x] 2. Agregar shebang y `set -e` a entrypoints que los omiten
   - Verificar que `#!/bin/bash` sea la primera línea de cada `entrypoint_agent.sh`, `entrypoint_master.sh` y `entrypoint_autonomo.sh`
   - Agregar `set -e` (o checks explícitos de exit code) en los archivos que no lo tengan
   - _Requisitos: 1.5, 1.6_
 
-  - [ ] 2.1 Auditar y corregir shebangs en todos los entrypoints activos
+  - [x] 2.1 Auditar y corregir shebangs en todos los entrypoints activos
     - Recorrer todos los archivos `entrypoint_*.sh` y agregar `#!/bin/bash` si falta
     - _Requisitos: 1.5_
 
