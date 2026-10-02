@@ -33,6 +33,8 @@
 | — | [Roadmap](20_roadmap.md) | Fases de implementación priorizadas |
 | — | [Quick Wins](21_quick_wins.md) | Mejoras de alto impacto y bajo esfuerzo |
 | — | [Open Questions](22_open_questions.md) | Decisiones que requieren validación del equipo |
+| — | [Phi Log Format Research](23_phi_log_format_research.md) | Resolución de OQ-03: patrones de Phi en logs (estado del arte) |
+| — | [Estado y Continuación](ESTADO_Y_CONTINUACION.md) | Traspaso de sesión: estado actual, Fase 0 completa, siguiente paso Fase 1 |
 
 ---
 
