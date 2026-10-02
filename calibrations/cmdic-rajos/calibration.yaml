@@ -1,0 +1,60 @@
+# =======================================================================
+# calibration.yaml - Modelo CMDIC Rajos
+# Contrato de configuracion de la calibracion. Validado por
+# calibration_utils.config antes de desplegar nada en AWS.
+#
+# Dimensionamiento derivado del modelo real:
+#   15.116 parametros | 243 observaciones | 8 grupos | NOPTMAX=20
+#   Comando del modelo: ./model.sh (usa Wine para plproc + utilidades PEST)
+#   Tamano del modelo: ~4.5 GB
+# =======================================================================
+
+# --- metadata ---
+name: cmdic-rajos
+description: "Calibracion CMDIC Rajos (MODFLOW-USG, PEST_HP regularizacion)"
+model_version: "pest_ensi_v13"
+
+# --- modelo ---
+pst_file: CMDIC_Rajos.pst          # el .pst que ejecuta el master
+
+# --- pest ---
+executable_master: ./pest_hp       # binario Linux nativo
+executable_agent: ./agent_hp       # binario Linux nativo
+port: 4004
+command_master: /h
+command_agent: /h
+
+# --- computo ---
+region: us-east-1
+# Master: necesita RAM alta (modelo 4.5GB + Jacobiano 15116x243 en memoria).
+# r6a.xlarge = 4 vCPU / 32 GB. Alternativa mayor: r6a.2xlarge (64 GB).
+master_instance_types: ["r6a.xlarge", "r6i.xlarge"]
+# Agentes: cada corrida del modelo es single-thread; 1 vCPU por agente.
+# c7a.medium = 1 vCPU / 2 GB (suficiente para una corrida del modelo).
+agent_instance_types: ["c7a.medium"]
+# 15.116 parametros => el Jacobiano pide ~15.116 corridas por iteracion.
+# initial_agents moderado; el autoscaler escala segun lo que pida PEST.
+initial_agents: 50
+max_agents: 300
+use_spot: true
+
+# --- infraestructura ---
+terraform_module: IaC_terraform/ModeloPest/talabre-linux/us-east-1
+s3_bucket: "803037204233-cmdic-rajos-results"
+ecr_image: "803037204233.dkr.ecr.us-east-1.amazonaws.com/pest-cmdic-rajos:__GIT_SHA__"
+ttl_hours: 96                      # NOPTMAX=20 con modelo grande puede ser largo
+
+# --- monitoreo ---
+log_retention_days: 90
+alert_email: ""                    # completar con el email del operador
+
+# --- calidad (umbrales iniciales; validar con calibraciones reales OQ-08) ---
+stagnation_window_iterations: 5
+stagnation_threshold: 0.001
+improvement_threshold: 0.01
+
+# --- alertas ---
+notify_on_stagnated: true
+notify_on_converged: true
+notify_on_failed: true
+notify_on_completed: true

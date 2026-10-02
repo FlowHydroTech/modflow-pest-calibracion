@@ -1,0 +1,4 @@
+# El modelo completo (binarios PEST + datos MODFLOW, ~4.5 GB) NO se versiona.
+# Cada colaborador lo coloca localmente antes de construir la imagen.
+app/modelo/*
+!app/modelo/.gitkeep

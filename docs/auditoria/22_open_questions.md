@@ -23,6 +23,13 @@ aws ec2 describe-nat-gateways --filter Name=state,Values=available --region us-e
 
 **Impacto de la respuesta:** Si están activos → ejecutar `terraform destroy` inmediatamente en esos módulos.
 
+**🟢 RESUELTO:** La arquitectura de la nueva cuenta FlowHydro (`803037204233`) se
+diseñó **sin NAT Gateway**: la VPC usa VPC Endpoints (S3, ECR, CloudWatch Logs,
+etc.) para el tráfico a AWS, evitando el costo fijo. La POC se desplegó y destruyó
+bajo este patrón (cuenta en ~$0/h en reposo). Los stacks legacy de prototipo deben
+revisarse/destruirse en la cuenta antigua si aún existen, pero el diseño objetivo
+ya no depende de NAT.
+
 ---
 
 ### OQ-02 — ¿Existe respaldo del terraform.tfstate actual?
@@ -32,6 +39,12 @@ aws ec2 describe-nat-gateways --filter Name=state,Values=available --region us-e
 **Por qué importa:** Si el state local se pierde, `terraform destroy` fallará y los recursos quedarán huérfanos. Antes de migrar al backend S3, necesitamos saber si existe recuperación.
 
 **Impacto de la respuesta:** Define si la migración al backend S3 puede hacerse directamente (`terraform init -migrate-state`) o si hay que reconstruir el state.
+
+**🟢 RESUELTO:** Se desplegó un **backend remoto de Terraform** en la cuenta
+FlowHydro: bucket S3 `803037204233-pest-terraform-state` (con versionado y cifrado)
+y tabla DynamoDB `terraform-state-lock` para bloqueo. El state ya no vive solo en
+máquinas locales; está respaldado y versionado. El módulo `talabre-linux/us-east-1`
+se conectó a este backend (resuelve F-01).
 
 ---
 
@@ -53,6 +66,15 @@ Current phi = 6234.80 (Measurement: 5891.30  Regularization: 343.50)
 
 **Impacto de la respuesta:** Define el patrón regex para los Metric Filters de Fase 2.
 
+**🟢 RESUELTO (vía literatura, pendiente de confirmación con log real):** Los
+patrones regex de Phi para PEST_HP se derivaron del estado del arte (documentación
+oficial de PEST + pyEMU) y se documentaron en
+`docs/auditoria/23_phi_log_format_research.md`. Están implementados en
+`lambdas/extract_phi/` y validados en la POC con un log sintético que replica el
+formato PEST. Cuando se corra el modelo real CMDIC Rajos, el primer paso es
+confirmar que el log del master coincide con los patrones (es ahora una
+confirmación, no un bloqueo).
+
 ---
 
 ### OQ-04 — ¿PEST HP usa binarios Windows (Wine) o Linux nativos para Talabre?
@@ -64,6 +86,20 @@ Current phi = 6234.80 (Measurement: 5891.30  Regularization: 343.50)
 **Por qué importa:** Si Talabre usa binarios Linux nativos, Wine no es necesario para ese proyecto y se puede simplificar la imagen considerablemente, eliminando el error `c0000018`.
 
 **Cómo validar:** Ejecutar `file /app/modelo/pest_hp` dentro del contenedor.
+
+**🟢 RESUELTO (inspección del modelo real CMDIC Rajos):** El modelo real
+(`pest_ensi_v13`) usa un **esquema híbrido**:
+- `pest_hp`, `agent_hp` y `mfusgt270` son **binarios Linux nativos** (se ejecutan
+  directo, sin Wine).
+- Las **utilidades de post-proceso SÍ requieren Wine**: `plproc.exe`,
+  `usgbud2smp1.exe` y `usgmod2smp.exe` son ejecutables Windows invocados con `wine`
+  dentro de `model.sh` en cada evaluación del modelo.
+
+Conclusión: **Wine es necesario** para el modelo CMDIC Rajos (no se puede eliminar),
+pero solo para las utilidades de post-proceso, no para el motor PEST/MODFLOW. El
+`Dockerfile` de `calibrations/cmdic-rajos/` instala Ubuntu 24.04 + Wine por esta
+razón. (Para Talabre, cuyos binarios son nativos y sin utilidades Windows, Wine sí
+podría eliminarse — confirmar al recibir ese modelo.)
 
 ---
 
@@ -99,6 +135,17 @@ Current phi = 6234.80 (Measurement: 5891.30  Regularization: 343.50)
 - Define los umbrales de "tiempo sin actividad" para alertas
 - Sirve para calibrar los umbrales de STAGNATED (si el modelo normalmente tarda 2 iteraciones, una ventana de 5 es excesiva)
 
+**🟡 PARCIALMENTE RESUELTO (inspección del `.pst` real):** El modelo CMDIC Rajos
+tiene **15.116 parámetros ajustables, 243 observaciones, 8 grupos de observación y
+NOPTMAX=20**. El número de parámetros es el factor dominante del costo: cada
+iteración calcula un Jacobiano que corre el modelo del orden de una vez por
+parámetro, lo que justifica decenas a cientos de agentes en paralelo. Por eso el
+`calibration.yaml` dimensiona `initial_agents: 50`, `max_agents: 300` y un master
+con 32 GB RAM. **Falta aún** el dato empírico de duración total y nº de agentes de
+una corrida que convergió (requiere ejecutar el modelo real o un log histórico);
+el `ttl_hours: 96` del `calibration.yaml` es una red de seguridad conservadora,
+no una medición.
+
 ---
 
 ### OQ-08 — ¿Cuántas iteraciones toman normalmente las calibraciones antes de converger?
@@ -106,6 +153,14 @@ Current phi = 6234.80 (Measurement: 5891.30  Regularization: 343.50)
 **Pregunta:** En el histórico de calibraciones, ¿cuántas iteraciones PEST típicamente necesita para converger para los modelos Talabre y CMDIC?
 
 **Por qué importa:** Define los parámetros de la ventana móvil para detección de STAGNATED. Una ventana de 5 iteraciones es muy pequeña si el modelo normalmente converge en 8–10, y muy grande si converge en 100+.
+
+**🟡 PARCIALMENTE RESUELTO (inspección del `.pst` real):** El control PEST de CMDIC
+Rajos (`CMDIC_Rajos.pst`) tiene **NOPTMAX = 20**, es decir, un tope de 20
+iteraciones. Esto acota el máximo (no habrá convergencias en 100+ iteraciones) y
+hace que la ventana por defecto de 5 iteraciones para STAGNATED sea razonable
+(25% del máximo). Falta aún el dato histórico de **en cuántas iteraciones converge
+típicamente** (requiere una corrida real o un log pasado) para afinar el umbral.
+Los defaults de `QualityConfig` (ventana=5) son el punto de partida fundamentado.
 
 ---
 
@@ -131,14 +186,14 @@ Current phi = 6234.80 (Measurement: 5891.30  Regularization: 343.50)
 
 | ID | Pregunta | Urgencia | Estado |
 |----|----------|----------|--------|
-| OQ-01 | NAT Gateways activos | 🔴 URGENTE (costo) | Pendiente |
-| OQ-02 | Respaldo del terraform.tfstate | 🔴 URGENTE | Pendiente |
-| OQ-03 | Formato líneas Phi en logs | 🟠 ALTA (bloquea Fase 2) | Pendiente |
-| OQ-04 | Wine vs binarios Linux Talabre | 🟡 MEDIA | Pendiente |
+| OQ-01 | NAT Gateways activos | 🔴 URGENTE (costo) | 🟢 Resuelto (sin NAT; VPC con endpoints) |
+| OQ-02 | Respaldo del terraform.tfstate | 🔴 URGENTE | 🟢 Resuelto (backend S3 versionado + lock DynamoDB) |
+| OQ-03 | Formato líneas Phi en logs | 🟠 ALTA (bloquea Fase 2) | 🟢 Resuelto por literatura (confirmar con log real) |
+| OQ-04 | Wine vs binarios Linux Talabre | 🟡 MEDIA | 🟢 Resuelto (híbrido: PEST nativo + utilidades Wine) |
 | OQ-05 | Versión PEST | 🟡 MEDIA | Pendiente |
 | OQ-06 | Proyectos simultáneos | 🔵 BAJA | Pendiente |
-| OQ-07 | Duración y agentes típicos | 🟠 ALTA (bloquea umbrales) | Pendiente |
-| OQ-08 | Iteraciones para converger | 🟡 MEDIA (bloquea Fase 3) | Pendiente |
+| OQ-07 | Duración y agentes típicos | 🟠 ALTA (bloquea umbrales) | 🟡 Parcial (dimensionamiento conocido; falta histórico) |
+| OQ-08 | Iteraciones para converger | 🟡 MEDIA (bloquea Fase 3) | 🟡 Parcial (NOPTMAX=20; falta convergencia típica) |
 | OQ-09 | Uso de regularización | 🟡 MEDIA (afecta Fase 3) | Pendiente |
 | OQ-10 | Restricciones corporativas AWS | 🟡 MEDIA (afecta Fase 6) | Pendiente |
 
