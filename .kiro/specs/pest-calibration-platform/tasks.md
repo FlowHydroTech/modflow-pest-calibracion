@@ -235,7 +235,7 @@ Elimina la dependencia de la conexión del operador e implementa el núcleo del 
     - **Property 4: Autoscaler uses only the Batch API for job management**
     - **Validates: Requirements 8.3**
 
-- [ ] 13. Implementar `scripts/safe_destroy.py` con verificación S3
+- [x] 13. Implementar `scripts/safe_destroy.py` con verificación S3
   - Implementar `safe_destroy(calibration_id, terraform_module, s3_bucket, force=False) -> DestroyResult`
   - Implementar `s3_results_exist(bucket, calibration_id) -> bool`
   - Implementar exportación de logs CloudWatch a S3 antes del destroy
@@ -244,42 +244,42 @@ Elimina la dependencia de la conexión del operador e implementa el núcleo del 
   - Manejar fallo de `terraform destroy`: enviar alerta SNS con lista de recursos, retornar `DestroyResult(success=False)`
   - _Requisitos: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8_
 
-  - [ ] 13.1 Implementar `s3_results_exist` y la guardia principal de `safe_destroy`
+  - [x] 13.1 Implementar `s3_results_exist` y la guardia principal de `safe_destroy`
     - Verificar prefijo S3 antes de cualquier acción; retornar `DestroyResult(success=False, reason="NO_RESULTS_IN_S3")` si no hay resultados y `force=False`
     - _Requisitos: 9.1_
 
-  - [ ] 13.2 Implementar exportación de logs y parada de Batch jobs
+  - [x] 13.2 Implementar exportación de logs y parada de Batch jobs
     - Exportar logs del master y agentes a S3; detener todos los jobs activos con `batch:TerminateJob`
     - _Requisitos: 9.2, 9.4_
 
-  - [ ] 13.3 Implementar `terraform destroy` con manejo de errores y verificación de huérfanos
+  - [x] 13.3 Implementar `terraform destroy` con manejo de errores y verificación de huérfanos
     - Ejecutar `terraform destroy` via subprocess; en fallo, enviar SNS con recursos a limpiar manualmente; verificar recursos huérfanos post-destroy
     - _Requisitos: 9.5, 9.6, 9.7_
 
-  - [ ]* 13.4 Escribir tests unitarios para `safe_destroy` con `moto`
+  - [x]* 13.4 Escribir tests unitarios para `safe_destroy` con `moto`
     - Verificar que `terraform destroy` nunca se llama cuando `s3_results_exist()` es `False` y `force=False`; verificar que con `force=True` procede aunque S3 esté vacío
     - _Requisitos: 9.1, 9.8_
 
-  - [ ]* 13.5 Escribir property test: `safe_destroy` con `force=False` y S3 vacío siempre retorna `success=False`
+  - [x]* 13.5 Escribir property test: `safe_destroy` con `force=False` y S3 vacío siempre retorna `success=False`
     - **Property 3: safe_destroy preserves results before destroying infrastructure**
     - **Validates: Requirements 9.1**
 
-- [ ] 14. Deprecar y archivar archivos legacy ECS Fargate
+- [x] 14. Deprecar y archivar archivos legacy ECS Fargate
   - Crear directorio `_legacy/` en la raíz del repositorio
   - Mover `IaC_terraform/Arquitectura_regional/`, `IaC_terraform/ModeloPest/unica_region_EC2/` e `IaC_terraform/ModeloPest/Multiple_Region/` a `_legacy/`
   - Mover scripts que llaman ECS API (`ecs:RunTask`, `ecs:StopTask`, `ecs:ListTasks`) a `_legacy/`
   - Agregar `README_LEGACY.md` en `_legacy/` explicando por qué están archivados
   - _Requisitos: 17.1, 17.2, 17.3, 17.4_
 
-  - [ ] 14.1 Crear `_legacy/` y mover módulos Terraform ECS Fargate
+  - [x] 14.1 Crear `_legacy/` y mover módulos Terraform ECS Fargate
     - Mover los tres directorios de módulos legacy a `_legacy/IaC_terraform/`
     - _Requisitos: 17.1_
 
-  - [ ] 14.2 Mover scripts ECS API a `_legacy/scripts/` y agregar `README_LEGACY.md`
+  - [x] 14.2 Mover scripts ECS API a `_legacy/scripts/` y agregar `README_LEGACY.md`
     - Mover `activar_agentes_pest.py` y cualquier script que llame ECS API; agregar README explicando la migración a Batch gen2
     - _Requisitos: 17.2, 17.4_
 
-- [ ] 15. Checkpoint Fase 1 — Verificar núcleo del Control Plane
+- [x] 15. Checkpoint Fase 1 — Verificar núcleo del Control Plane
   - Ejecutar todos los tests unitarios y de propiedades de `calibration_utils/` y lambdas
   - Verificar que no hay imports de ECS API en código activo (fuera de `_legacy/`)
   - Asegurarse de que todos los tests pasen; preguntar al usuario si surgen dudas.

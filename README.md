@@ -2,6 +2,30 @@
 
 Repositorio para ejecutar calibraciones PEST de modelos hidrogeológicos en AWS usando contenedores Linux, AWS Batch, ECR, S3 y CloudWatch Logs. La arquitectura actual corre master y agentes en subredes privadas, sin IP pública, y se apoya en endpoints de VPC para acceder a los servicios de infraestructura necesarios.
 
+## Arquitectura activa y Control Plane
+
+> La arquitectura de produccion es **AWS Batch EC2** (generacion 2). La
+> generacion anterior (ECS Fargate) esta archivada en `_legacy/` y no se
+> mantiene (ver `_legacy/README_LEGACY.md`).
+
+Estructura del proyecto tras la evolucion a plataforma automatizada
+(ver spec en `.kiro/specs/pest-calibration-platform/` y auditoria en
+`docs/auditoria/`):
+
+- `IaC_terraform/ModeloPest/talabre-linux/` y `cmdic-linux-ensi/` - infraestructura AWS Batch EC2 (gen2).
+- `IaC_terraform/bootstrap/` - backend remoto de Terraform (S3 state + DynamoDB lock).
+- `calibration_utils/` - biblioteca compartida del Control Plane (config, batch, cloudwatch).
+- `lambdas/autoscaler/` - Lambda Autoscaler (reemplaza el autoscaler manual).
+- `scripts/safe_destroy.py` - destruccion segura con verificacion de resultados en S3.
+- `tests/` - suite pytest + hypothesis + moto.
+- `_legacy/` - modulos ECS Fargate gen1 archivados.
+
+Para desarrollo del Control Plane:
+
+```bash
+pip install -e ".[test]"
+PYTHONPATH=. pytest tests/ -v
+```
 ## Índice
 
 - [Descripción general](#descripción-general)

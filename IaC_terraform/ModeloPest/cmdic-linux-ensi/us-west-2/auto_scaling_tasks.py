@@ -1,3 +1,10 @@
+# =====================================================================
+# DEPRECADO (F-03): este script manual corre en loop en la laptop del
+# operador. Fue reemplazado por el Lambda Autoscaler
+# (lambdas/autoscaler/handler.py), que corre en AWS via EventBridge y no
+# depende de la conexion del operador. Se conserva solo como referencia
+# hasta validar la Lambda en produccion. NO usar para nuevas calibraciones.
+# =====================================================================
 import os
 import sys
 import pandas as pd
