@@ -200,7 +200,7 @@ Elimina la dependencia de la conexión del operador e implementa el núcleo del 
     - Verificar que `wait_for_master_ip` retorna `None` al timeout, que `get_running_jobs` nunca llama ECS
     - _Requisitos: 8.3, 16.5_
 
-- [ ] 12. Implementar Lambda Autoscaler con EventBridge scheduled rule
+- [x] 12. Implementar Lambda Autoscaler con EventBridge scheduled rule
   - Crear directorio `lambdas/autoscaler/` con `handler.py`, `requirements.txt` y `template.yaml` (SAM o Terraform)
   - Implementar `handler(event, context) -> AutoscalerResult` con el algoritmo del diseño
   - Implementar `extract_models_requested(log_group, calibration_id) -> int` leyendo patrones de logs
@@ -211,27 +211,27 @@ Elimina la dependencia de la conexión del operador e implementa el núcleo del 
   - Definir IAM Role con permisos mínimos: `batch:ListJobs`, `batch:SubmitJob`, `batch:TerminateJob`, `cloudwatch:PutMetricData`, `logs:GetLogEvents`
   - _Requisitos: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8_
 
-  - [ ] 12.1 Crear estructura `lambdas/autoscaler/` con `handler.py` base
+  - [x] 12.1 Crear estructura `lambdas/autoscaler/` con `handler.py` base
     - Implementar el esqueleto del handler con parseo de `event` y retorno de `AutoscalerResult`
     - _Requisitos: 8.1, 8.7_
 
-  - [ ] 12.2 Implementar `extract_models_requested` leyendo logs de CloudWatch
+  - [x] 12.2 Implementar `extract_models_requested` leyendo logs de CloudWatch
     - Buscar patrones `"Running model X times"` y `"Calculating Jacobian matrix: running model X times"` en los últimos 15 minutos; retornar el máximo X
     - _Requisitos: 8.2_
 
-  - [ ] 12.3 Implementar ciclo completo de autoscaling (verificar master, ajustar agentes)
+  - [x] 12.3 Implementar ciclo completo de autoscaling (verificar master, ajustar agentes)
     - Integrar verificación de salud, conteo de agentes activos vía Batch API, lanzamiento de nuevos agentes y terminación de completados
     - _Requisitos: 8.3, 8.4, 8.5, 8.6, 8.8_
 
-  - [ ] 12.4 Crear módulo Terraform `lambdas/autoscaler/infra.tf` con Lambda + EventBridge + IAM Role
+  - [x] 12.4 Crear módulo Terraform `lambdas/autoscaler/infra.tf` con Lambda + EventBridge + IAM Role
     - Definir `aws_lambda_function`, `aws_cloudwatch_event_rule`, `aws_cloudwatch_event_target` y `aws_iam_role` con permisos mínimos
     - _Requisitos: 3.3, 8.1_
 
-  - [ ]* 12.5 Escribir tests unitarios para el handler del Autoscaler con `moto`
+  - [x]* 12.5 Escribir tests unitarios para el handler del Autoscaler con `moto`
     - Verificar que no se lanzan más agentes que `max_agents`, que se usa Batch API exclusivamente, que `MasterHealth=0` se publica cuando no hay logs
     - _Requisitos: 8.3, 8.4, 8.6_
 
-  - [ ]* 12.6 Escribir property test: autoscaler nunca excede `max_agents`
+  - [x]* 12.6 Escribir property test: autoscaler nunca excede `max_agents`
     - **Property 4: Autoscaler uses only the Batch API for job management**
     - **Validates: Requirements 8.3**
 

@@ -1,0 +1,3 @@
+# Dependencias runtime del Lambda Autoscaler.
+# boto3 ya viene incluido en el runtime de AWS Lambda; se lista para empaquetado local.
+boto3>=1.34.0,<2.0
