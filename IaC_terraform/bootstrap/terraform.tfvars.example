@@ -1,0 +1,10 @@
+# Copiar a terraform.tfvars y completar con valores reales.
+# El bucket S3 debe tener un nombre globalmente unico.
+# Ejemplo (reemplazar ACCOUNT_ID por el id real):
+# tf_state_bucket = "ACCOUNT_ID-pest-terraform-state"
+# tf_lock_table   = "terraform-state-lock"
+# aws_region      = "us-east-1"
+
+tf_state_bucket = ""
+tf_lock_table   = "terraform-state-lock"
+aws_region      = "us-east-1"

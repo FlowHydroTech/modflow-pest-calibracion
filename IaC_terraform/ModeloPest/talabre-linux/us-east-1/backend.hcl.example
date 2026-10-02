@@ -1,0 +1,9 @@
+# Copiar a backend.hcl y completar. Luego:
+#   terraform init -backend-config=backend.hcl
+# NO versionar backend.hcl con valores reales (esta en .gitignore).
+
+bucket         = "ACCOUNT_ID-pest-terraform-state"
+key            = "pest-talabre-linux/us-east-1/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "terraform-state-lock"
+encrypt        = true

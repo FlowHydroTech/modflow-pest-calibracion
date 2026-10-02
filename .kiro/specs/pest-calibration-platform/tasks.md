@@ -45,28 +45,28 @@ Corrige los riesgos activos sin agregar nuevas funcionalidades. Todas las tareas
     - Agregar script `scripts/lint_entrypoints.sh` que falle si algún entrypoint carece de shebang o `set -e`
     - _Requisitos: 1.5, 1.6_
 
-- [ ] 3. Configurar Terraform backend S3 + DynamoDB en el módulo talabre-linux
+- [x] 3. Configurar Terraform backend S3 + DynamoDB en el módulo talabre-linux
   - Crear archivo `backend.tf` en el módulo Terraform activo con el bloque `terraform { backend "s3" { ... } }`
   - Usar variables para `bucket`, `key`, `region` y `dynamodb_table` (no valores hardcodeados)
   - Habilitar `encrypt = true` en la configuración del backend
   - Crear los recursos S3 (con versionado) y DynamoDB (tabla de locks) en un módulo de bootstrap separado si no existen
   - _Requisitos: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-  - [ ] 3.1 Crear `IaC_terraform/bootstrap/main.tf` con bucket S3 de state y tabla DynamoDB
+  - [x] 3.1 Crear `IaC_terraform/bootstrap/main.tf` con bucket S3 de state y tabla DynamoDB
     - Definir `aws_s3_bucket` con versioning habilitado, `aws_s3_bucket_server_side_encryption_configuration` y `aws_dynamodb_table` con `LockID` como hash key
     - _Requisitos: 2.1, 2.2, 2.3_
 
-  - [ ] 3.2 Crear `backend.tf` en el módulo `talabre-linux` con backend S3 parametrizado
+  - [x] 3.2 Crear `backend.tf` en el módulo `talabre-linux` con backend S3 parametrizado
     - Usar `variable "tf_state_bucket"`, `variable "tf_state_key"` y `variable "tf_lock_table"` para que sea configurable por entorno
     - _Requisitos: 2.1, 2.4, 2.5_
 
-- [ ] 4. Restringir IAM wildcard S3 al bucket específico de cada calibración
+- [x] 4. Restringir IAM wildcard S3 al bucket específico de cada calibración
   - Localizar el recurso `aws_iam_role_policy "task_role_s3"` en `main.tf` del módulo talabre-linux
   - Reemplazar `arn:aws:s3:::*` y `arn:aws:s3:::*/*` por `arn:aws:s3:::${var.s3_bucket}` y `arn:aws:s3:::${var.s3_bucket}/*`
   - Revisar si existe permiso KMS Decrypt con `Resource = "*"` en módulos legacy gen1 y reemplazarlo por ARN específico o eliminar el permiso si no se usa
   - _Requisitos: 3.1, 3.2, 3.5_
 
-  - [ ] 4.1 Restringir S3 IAM en `talabre-linux/main.tf`
+  - [x] 4.1 Restringir S3 IAM en `talabre-linux/main.tf`
     - Modificar el `Statement` de S3 para usar `arn:aws:s3:::${var.s3_bucket}` y `arn:aws:s3:::${var.s3_bucket}/*`
     - _Requisitos: 3.1, 3.2_
 
@@ -74,13 +74,13 @@ Corrige los riesgos activos sin agregar nuevas funcionalidades. Todas las tareas
     - Localizar el permiso KMS Decrypt con wildcard y reemplazarlo por ARN de clave específica o eliminarlo si no hay cifrado activo
     - _Requisitos: 3.5_
 
-- [ ] 5. Mover datos sensibles fuera del código versionado
+- [x] 5. Mover datos sensibles fuera del código versionado
   - Eliminar todos los valores hardcodeados de account ID (12 dígitos), VPC IDs (`vpc-*`), subnet IDs (`subnet-*`) y route table IDs (`rtb-*`) de los archivos `variables.tf`
   - Reemplazar account IDs en scripts Python/PowerShell/Bash por llamadas dinámicas a `aws sts get-caller-identity`
   - Crear `.gitignore` actualizado que excluya `terraform.tfvars`, `*.tfvars` (excepto `*.tfvars.example`)
   - _Requisitos: 4.1, 4.2, 4.3_
 
-  - [ ] 5.1 Limpiar `variables.tf` de IDs de infraestructura hardcodeados
+  - [x] 5.1 Limpiar `variables.tf` de IDs de infraestructura hardcodeados
     - Reemplazar valores default de VPC ID, subnet ID y route table ID por `""` (vacío) o eliminar el default para forzar que el operador los provea en `terraform.tfvars`
     - _Requisitos: 4.1, 4.2_
 
@@ -88,24 +88,24 @@ Corrige los riesgos activos sin agregar nuevas funcionalidades. Todas las tareas
     - Actualizar scripts Python y Bash que usan account ID estático para derivarlo dinámicamente con `boto3.client('sts').get_caller_identity()['Account']` o `$(aws sts get-caller-identity --query Account --output text)`
     - _Requisitos: 4.3_
 
-- [ ] 6. Crear `terraform.tfvars.example` con todas las variables requeridas
+- [x] 6. Crear `terraform.tfvars.example` con todas las variables requeridas
   - Crear el archivo en el directorio raíz del módulo activo (`talabre-linux/terraform.tfvars.example`) documentando cada variable sin valores reales
   - Incluir comentarios explicativos para cada variable (cómo obtener el valor, formato esperado)
   - Verificar que `terraform.tfvars` está en `.gitignore`
   - _Requisitos: 4.4_
 
-  - [ ] 6.1 Crear `terraform.tfvars.example` en `talabre-linux/`
+  - [x] 6.1 Crear `terraform.tfvars.example` en `talabre-linux/`
     - Documentar todas las variables necesarias con valores de ejemplo ficticios y comentarios
     - _Requisitos: 4.4_
 
-- [ ] 7. Consolidar `pyproject.toml` con todas las dependencias necesarias
+- [x] 7. Consolidar `pyproject.toml` con todas las dependencias necesarias
   - Crear o actualizar `pyproject.toml` en la raíz del repositorio como fuente única de dependencias Python
   - Agregar `boto3>=1.34.0,<2.0`, `pyyaml>=6.0,<7.0`, `python-hcl2>=4.3,<5.0`, `click>=8.1,<9.0`, `rich>=13.0,<14.0` como dependencias runtime
   - Agregar sección `[project.optional-dependencies]` con `test = ["pytest>=8.0,<9.0", "pytest-mock>=3.14,<4.0", "hypothesis>=6.100,<7.0", "moto[batch,cloudwatch,s3,logs]>=5.0,<6.0"]`
   - Identificar y marcar como redundantes los `requirements.txt` individuales que dupliquen estas dependencias
   - _Requisitos: 18.1, 18.2, 18.3, 18.4_
 
-  - [ ] 7.1 Crear/actualizar `pyproject.toml` con dependencias runtime y de test
+  - [x] 7.1 Crear/actualizar `pyproject.toml` con dependencias runtime y de test
     - Incluir todas las dependencias del diseño con rangos de versión exactos
     - _Requisitos: 18.1, 18.2, 18.4_
 

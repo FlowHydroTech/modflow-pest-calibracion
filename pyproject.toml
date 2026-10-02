@@ -1,12 +1,39 @@
 [project]
 name = "modflow-pest-calibracion"
 version = "0.1.0"
-description = "Add your description here"
+description = "Plataforma de calibraciones PEST en AWS (Control Plane sobre AWS Batch EC2)"
 readme = "README.md"
 requires-python = ">=3.12"
+
+# Fuente autoritativa de dependencias Python del proyecto (F-12).
+# Los requirements.txt individuales de cada imagen Docker se mantienen solo
+# para el build del contenedor; este pyproject.toml gobierna el Control Plane.
 dependencies = [
-    "mkdocs>=1.6.1",
-    "openpyxl>=3.1.5",
-    "pandas>=3.0.5",
-    "python-hcl2>=8.1.2",
+    "boto3>=1.34.0,<2.0",
+    "pyyaml>=6.0,<7.0",
+    "python-hcl2>=4.3,<5.0",
+    "click>=8.1,<9.0",
+    "rich>=13.0,<14.0",
+    "pandas>=2.0,<3.0",
+    "openpyxl>=3.1,<4.0",
 ]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0,<9.0",
+    "pytest-mock>=3.14,<4.0",
+    "hypothesis>=6.100,<7.0",
+    "moto[batch,cloudwatch,s3,logs]>=5.0,<6.0",
+]
+docs = [
+    "mkdocs>=1.6,<2.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

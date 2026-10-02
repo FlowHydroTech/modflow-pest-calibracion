@@ -1,0 +1,22 @@
+# =======================================================================
+# Copiar a terraform.tfvars y completar con los valores reales del entorno.
+# terraform.tfvars esta excluido de git (.gitignore) para no versionar
+# IDs de infraestructura ni el account id (F-04, F-05).
+# =======================================================================
+
+# --- Red (obtener de la consola AWS / VPC) ---
+vpc_id                  = "vpc-xxxxxxxxxxxxxxxxx"
+private_subnet_ids      = ["subnet-xxxxxxxxxxxxxxxxx", "subnet-yyyyyyyyyyyyyyyyy"]
+private_route_table_ids = ["rtb-xxxxxxxxxxxxxxxxx"]
+
+# --- Proyecto y artefactos ---
+# Usar un bucket por proyecto. El account id NO debe hardcodearse en codigo:
+# derivarlo con: aws sts get-caller-identity --query Account --output text
+s3_bucket_linux = "<ACCOUNT_ID>-pest-talabre-east-1"
+
+# Imagen ECR: usar SIEMPRE un tag de commit SHA, nunca :latest (reproducibilidad, R14)
+ecr_image_linux = "<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/pest-talabre-linux:<GIT_SHA>"
+
+# --- Opcional: sobreescribir defaults del modelo/compute si aplica ---
+# aws_region   = "us-east-1"
+# project_name = "pest-talabre-linux"

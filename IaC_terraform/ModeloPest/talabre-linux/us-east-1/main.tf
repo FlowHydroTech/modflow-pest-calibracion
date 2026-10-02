@@ -53,7 +53,7 @@ resource "aws_iam_role_policy" "task_role_s3" {
         "s3:PutObjectAcl",
         "s3:DeleteObject"
       ]
-      Resource = ["arn:aws:s3:::*", "arn:aws:s3:::*/*"]
+      Resource = ["arn:aws:s3:::${var.s3_bucket_linux}", "arn:aws:s3:::${var.s3_bucket_linux}/*"]
     }]
   })
 }

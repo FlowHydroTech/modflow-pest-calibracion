@@ -1,0 +1,26 @@
+# Normalizacion de fin de linea
+# Los scripts bash DEBEN usar LF: CRLF rompe el shebang en contenedores Linux
+*.sh    text eol=lf
+*.bash  text eol=lf
+
+# Codigo e IaC: LF para consistencia multiplataforma
+*.py    text eol=lf
+*.tf    text eol=lf
+*.tfvars text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+
+# Scripts de Windows: mantener CRLF
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Binarios: sin normalizacion
+*.png   binary
+*.jpg   binary
+*.xlsx  binary
+*.jco   binary
+*.exe   binary
+*.drawio binary

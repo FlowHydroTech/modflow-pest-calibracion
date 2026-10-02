@@ -219,4 +219,12 @@ data/
 # Terraform state and provider directories
 .terraform/
 *terraform.*
+!*.tfvars.example
+!terraform.tfvars.example
 **/.terraform/.DS_Store
+
+# Terraform tfvars y backend config con valores reales (F-04, F-05)
+*.tfvars
+!*.tfvars.example
+backend.hcl
+!backend.hcl.example

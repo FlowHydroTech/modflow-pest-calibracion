@@ -3,9 +3,9 @@
 # -----------------------------------------------------------------------
 variable "aws_region" { default = "us-east-1" }
 
-variable "vpc_id"                  { default = "vpc-03f2a07e3273c4216" }
-variable "private_subnet_ids"      { default = ["subnet-0ee3049163ee70c2b", "subnet-03c2984d9dc3c750d"] }
-variable "private_route_table_ids" { default = ["rtb-0b2db01342c535de2"] }
+variable "vpc_id"                  { type = string }  # proveer en terraform.tfvars
+variable "private_subnet_ids"      { type = list(string) }  # proveer en terraform.tfvars
+variable "private_route_table_ids" { type = list(string) }  # proveer en terraform.tfvars
 
 # -----------------------------------------------------------------------
 # Modelo PEST
@@ -35,8 +35,8 @@ variable "activate_jacobiano" { default = "0" }
 # Proyecto y artefactos
 # -----------------------------------------------------------------------
 variable "project_name" { default = "pest-talabre-linux" }
-variable "s3_bucket_linux" { default = "312019940349-pest-talabre-east-1" }
-variable "ecr_image_linux" { default = "312019940349.dkr.ecr.us-east-1.amazonaws.com/pest-talabre-linux:latest" }
+variable "s3_bucket_linux" { type = string }  # proveer en terraform.tfvars
+variable "ecr_image_linux" { type = string }  # proveer en terraform.tfvars (usar tag de commit SHA, no :latest)
 
 # -----------------------------------------------------------------------
 # AWS Batch — compute environments
